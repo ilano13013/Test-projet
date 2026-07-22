@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connexion — Les Curieux</title>
+<style>
+  :root {
+    --bg-top: #1b2340;
+    --bg-bottom: #0d1226;
+    --card-bg: #ffffff;
+    --accent: #5b6cff;
+    --accent-dark: #4353e8;
+    --ink: #23263a;
+    --muted: #8a8fa8;
+    --silhouette: #23263a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+    overflow: hidden;
+  }
+
+  /* ---------- décor ---------- */
+  .stars {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+  }
+  .stars span {
+    position: absolute;
+    width: 3px; height: 3px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.7);
+    animation: twinkle 3s ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: .2; transform: scale(.8); }
+    50%       { opacity: 1;  transform: scale(1.2); }
+  }
+
+  /* ---------- scène ---------- */
+  .scene {
+    position: relative;
+    width: min(420px, 92vw);
+  }
+
+  /* ---------- silhouettes ---------- */
+  .peeps {
+    position: absolute;
+    left: 0; right: 0;
+    bottom: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: -14px;   /* elles dépassent derrière la carte */
+    z-index: 0;
+  }
+
+  .peep {
+    transition: transform .55s cubic-bezier(.34,1.4,.5,1);
+    transform-origin: bottom center;
+  }
+  .peep svg { display: block; overflow: visible; }
+
+  .head, .eye, .pupil { transform-box: fill-box; }
+  .head   { transition: transform .55s cubic-bezier(.34,1.4,.5,1); transform-origin: 50% 80%; }
+  .eye    { transition: transform .4s ease, ry .3s ease; transform-origin: center; }
+  .pupil  { transition: transform .25s ease-out; }
+  .lid    { opacity: 0; transition: opacity .25s ease; }
+  .hands  { opacity: 0; transform: translateY(14px); transition: opacity .3s ease, transform .35s cubic-bezier(.34,1.4,.5,1); }
+  .brow   { opacity: 0; transition: opacity .3s ease, transform .3s ease; }
+  .note   { opacity: 0; transition: opacity .3s ease; }
+
+  /* --- état repos : petite respiration --- */
+  .peep { animation: breathe 4s ease-in-out infinite; }
+  .peep:nth-child(2) { animation-delay: -1.3s; }
+  .peep:nth-child(3) { animation-delay: -2.6s; }
+  @keyframes breathe {
+    0%, 100% { translate: 0 0; }
+    50%      { translate: 0 3px; }
+  }
+
+  /* --- état email : curieuses, penchées, elles lisent --- */
+  body.state-email .peep-1 { transform: translateY(6px) rotate(-6deg); }
+  body.state-email .peep-2 { transform: translateY(2px); }
+  body.state-email .peep-3 { transform: translateY(6px) rotate(6deg); }
+  body.state-email .head   { transform: rotate(4deg); }
+  body.state-email .peep-3 .head { transform: rotate(-4deg); }
+  body.state-email .brow   { opacity: 1; transform: translateY(-2px); }
+
+  /* --- état password masqué : TRÈS curieuses, penchées en avant, yeux plissés --- */
+  body.state-password .peep-1 { transform: translateY(-4px) translateX(12px) rotate(-8deg) scale(1.12); }
+  body.state-password .peep-2 { transform: translateY(-8px) scale(1.16); }
+  body.state-password .peep-3 { transform: translateY(-4px) translateX(-12px) rotate(8deg) scale(1.12); }
+  body.state-password .head   { transform: rotate(7deg) translateY(2px); }
+  body.state-password .peep-3 .head { transform: rotate(-7deg) translateY(2px); }
+  body.state-password .eye    { transform: scaleY(.55); }
+  body.state-password .brow   { opacity: 1; transform: translateY(1px); }
+  body.state-password .peep   { animation: lean-in 1.6s ease-in-out infinite; }
+  @keyframes lean-in {
+    0%, 100% { translate: 0 0; }
+    50%      { translate: 0 4px; }
+  }
+
+  /* --- état révélé : elles détournent le regard --- */
+  body.state-reveal .peep { animation: none; }
+
+  /* peep 1 : se couvre les yeux */
+  body.state-reveal .peep-1 { transform: translateY(-4px) rotate(-3deg); }
+  body.state-reveal .peep-1 .hands { opacity: 1; transform: translateY(0); }
+  body.state-reveal .peep-1 .lid   { opacity: 1; }
+
+  /* peep 2 : se retourne complètement (on voit son dos) */
+  body.state-reveal .peep-2 { transform: translateY(-2px); }
+  body.state-reveal .peep-2 .face { opacity: 0; transition: opacity .2s ease; }
+  body.state-reveal .peep-2 .head { transform: rotate(0); }
+
+  /* peep 3 : regarde le plafond en sifflotant */
+  body.state-reveal .peep-3 { transform: translateY(-6px) rotate(8deg); }
+  body.state-reveal .peep-3 .head { transform: rotate(14deg); }
+  body.state-reveal .peep-3 .pupil { transform: translate(2px, -5px) !important; }
+  body.state-reveal .peep-3 .note { opacity: 1; animation: float-note 1.6s ease-in-out infinite; }
+  @keyframes float-note {
+    0%   { transform: translate(0, 0); opacity: 0; }
+    30%  { opacity: 1; }
+    100% { transform: translate(6px, -14px); opacity: 0; }
+  }
+
+  /* ---------- carte ---------- */
+  .card {
+    position: relative;
+    z-index: 1;
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 38px 34px 34px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.45);
+  }
+
+  .card h1 {
+    font-size: 1.45rem;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .card .subtitle {
+    font-size: .88rem;
+    color: var(--muted);
+    margin-bottom: 26px;
+  }
+
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 7px;
+  }
+
+  .input-wrap { position: relative; }
+
+  .field input {
+    width: 100%;
+    padding: 13px 15px;
+    font-size: .95rem;
+    color: var(--ink);
+    border: 2px solid #e4e6f0;
+    border-radius: 12px;
+    outline: none;
+    background: #fafbff;
+    transition: border-color .25s ease, box-shadow .25s ease;
+  }
+  .field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(91,108,255,.15);
+  }
+  .field input[type="password"],
+  .field input[data-password] { padding-right: 48px; }
+
+  .toggle-pass {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    line-height: 0;
+    color: var(--muted);
+    transition: color .2s ease, background .2s ease;
+  }
+  .toggle-pass:hover { color: var(--accent); background: rgba(91,108,255,.1); }
+
+  .btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 14px;
+    font-size: .98rem;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .2s ease;
+    box-shadow: 0 10px 24px rgba(91,108,255,.35);
+  }
+  .btn:hover  { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(91,108,255,.45); }
+  .btn:active { transform: translateY(0); }
+
+  .hint {
+    margin-top: 16px;
+    text-align: center;
+    font-size: .78rem;
+    color: var(--muted);
+    min-height: 1.2em;
+    transition: opacity .3s ease;
+  }
+</style>
+</head>
+<body>
+
+  <div class="stars" id="stars"></div>
+
+  <div class="scene">
+
+    <!-- ================= SILHOUETTES ================= -->
+    <div class="peeps" aria-hidden="true">
+
+      <!-- Peep 1 : se couvre les yeux quand le mdp est visible -->
+      <div class="peep peep-1">
+        <svg width="110" height="120" viewBox="0 0 110 120">
+          <!-- corps -->
+          <path d="M15 120 C15 85 40 72 55 72 C70 72 95 85 95 120 Z" fill="var(--silhouette)"/>
+          <g class="head">
+            <circle cx="55" cy="42" r="30" fill="var(--silhouette)"/>
+            <!-- petite mèche -->
+            <path d="M40 16 Q47 6 58 12 Q52 12 50 18 Z" fill="var(--silhouette)"/>
+            <g class="face">
+              <!-- sourcils curieux -->
+              <path class="brow" d="M36 26 Q42 22 48 25" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+              <path class="brow" d="M62 25 Q68 22 74 26" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+              <!-- yeux -->
+              <ellipse class="eye eye-l" cx="42" cy="38" rx="8" ry="9" fill="#fff"/>
+              <ellipse class="eye eye-r" cx="68" cy="38" rx="8" ry="9" fill="#fff"/>
+              <circle class="pupil" cx="42" cy="38" r="3.6" fill="var(--silhouette)"/>
+              <circle class="pupil" cx="68" cy="38" r="3.6" fill="var(--silhouette)"/>
+              <!-- paupières fermées -->
+              <path class="lid" d="M34 38 Q42 43 50 38" stroke="#fff" stroke-width="2.5" fill="var(--silhouette)" stroke-linecap="round"/>
+              <path class="lid" d="M60 38 Q68 43 76 38" stroke="#fff" stroke-width="2.5" fill="var(--silhouette)" stroke-linecap="round"/>
+            </g>
+            <!-- mains sur les yeux -->
+            <g class="hands">
+              <circle cx="40" cy="40" r="12" fill="var(--silhouette)" stroke="#3a3f5c" stroke-width="2"/>
+              <circle cx="70" cy="40" r="12" fill="var(--silhouette)" stroke="#3a3f5c" stroke-width="2"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Peep 2 : le grand au milieu, se retourne quand le mdp est visible -->
+      <div class="peep peep-2">
+        <svg width="120" height="140" viewBox="0 0 120 140">
+          <path d="M18 140 C18 100 45 86 60 86 C75 86 102 100 102 140 Z" fill="var(--silhouette)"/>
+          <g class="head">
+            <circle cx="60" cy="50" r="34" fill="var(--silhouette)"/>
+            <path d="M44 20 Q56 8 74 18 Q62 16 58 24 Z" fill="var(--silhouette)"/>
+            <g class="face">
+              <path class="brow" d="M40 32 Q46 28 53 31" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+              <path class="brow" d="M67 31 Q74 28 80 32" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+              <ellipse class="eye eye-l" cx="46" cy="46" rx="9" ry="10" fill="#fff"/>
+              <ellipse class="eye eye-r" cx="74" cy="46" rx="9" ry="10" fill="#fff"/>
+              <circle class="pupil" cx="46" cy="46" r="4" fill="var(--silhouette)"/>
+              <circle class="pupil" cx="74" cy="46" r="4" fill="var(--silhouette)"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Peep 3 : sifflote en regardant ailleurs quand le mdp est visible -->
+      <div class="peep peep-3">
+        <svg width="110" height="120" viewBox="0 0 110 120">
+          <path d="M15 120 C15 85 40 72 55 72 C70 72 95 85 95 120 Z" fill="var(--silhouette)"/>
+          <g class="head">
+            <circle cx="55" cy="42" r="30" fill="var(--silhouette)"/>
+            <path d="M52 12 Q64 4 72 14 Q63 12 60 18 Z" fill="var(--silhouette)"/>
+            <g class="face">
+              <path class="brow" d="M36 26 Q42 22 48 25" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+              <path class="brow" d="M62 25 Q68 22 74 26" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+              <ellipse class="eye eye-l" cx="42" cy="38" rx="8" ry="9" fill="#fff"/>
+              <ellipse class="eye eye-r" cx="68" cy="38" rx="8" ry="9" fill="#fff"/>
+              <circle class="pupil" cx="42" cy="38" r="3.6" fill="var(--silhouette)"/>
+              <circle class="pupil" cx="68" cy="38" r="3.6" fill="var(--silhouette)"/>
+              <!-- bouche qui siffle -->
+              <circle class="note-mouth" cx="55" cy="54" r="0" fill="#fff"/>
+            </g>
+            <!-- notes de musique -->
+            <text class="note" x="88" y="20" font-size="14" fill="#fff">♪</text>
+            <text class="note" x="96" y="34" font-size="11" fill="#fff" style="animation-delay:.8s">♫</text>
+          </g>
+        </svg>
+      </div>
+
+    </div>
+
+    <!-- ================= FORMULAIRE ================= -->
+    <form class="card" id="loginForm" autocomplete="off">
+      <h1>Bon retour&nbsp;!</h1>
+      <p class="subtitle">Connectez-vous… on ne regarde pas, promis.</p>
+
+      <div class="field">
+        <label for="email">Adresse e-mail</label>
+        <div class="input-wrap">
+          <input type="email" id="email" placeholder="vous@exemple.com" spellcheck="false">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="password">Mot de passe</label>
+        <div class="input-wrap">
+          <input type="password" id="password" data-password placeholder="••••••••">
+          <button type="button" class="toggle-pass" id="togglePass" aria-label="Afficher le mot de passe" title="Afficher / masquer">
+            <!-- œil ouvert -->
+            <svg id="iconShow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+            <!-- œil barré -->
+            <svg id="iconHide" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn">Se connecter</button>
+      <p class="hint" id="hint"></p>
+    </form>
+
+  </div>
+
+<script>
+(function () {
+  const body      = document.body;
+  const email     = document.getElementById('email');
+  const password  = document.getElementById('password');
+  const toggle    = document.getElementById('togglePass');
+  const iconShow  = document.getElementById('iconShow');
+  const iconHide  = document.getElementById('iconHide');
+  const hint      = document.getElementById('hint');
+  const form      = document.getElementById('loginForm');
+  const pupils    = document.querySelectorAll('.pupil');
+
+  let revealed = false;
+
+  /* ---------- petites étoiles de fond ---------- */
+  const stars = document.getElementById('stars');
+  for (let i = 0; i < 40; i++) {
+    const s = document.createElement('span');
+    s.style.left = Math.random() * 100 + 'vw';
+    s.style.top  = Math.random() * 100 + 'vh';
+    s.style.animationDelay = (Math.random() * 3) + 's';
+    stars.appendChild(s);
+  }
+
+  /* ---------- gestion des états ---------- */
+  const HINTS = {
+    idle:     '',
+    email:    'Elles lisent par-dessus votre épaule… 👀',
+    password: 'Chut… elles essaient de deviner votre mot de passe.',
+    reveal:   'Mot de passe visible : elles détournent le regard, promis !'
+  };
+
+  function setState(state) {
+    body.classList.remove('state-email', 'state-password', 'state-reveal');
+    if (state !== 'idle') body.classList.add('state-' + state);
+    hint.textContent = HINTS[state];
+  }
+
+  function currentState() {
+    if (revealed) return 'reveal';
+    if (document.activeElement === password) return 'password';
+    if (document.activeElement === email) return 'email';
+    return 'idle';
+  }
+
+  function refresh() { setState(currentState()); }
+
+  /* ---------- yeux qui suivent la frappe ---------- */
+  function trackEyes(input) {
+    // position approximative du caret → décalage horizontal des pupilles
+    const len   = input.value.length;
+    const ratio = Math.min(len / 24, 1);          // 0 → 1 le long du champ
+    const x     = -4 + ratio * 8;                  // -4px … +4px
+    const y     = document.activeElement === input ? 4 : 0; // regard vers le bas
+    pupils.forEach(p => { p.style.transform = `translate(${x}px, ${y}px)`; });
+  }
+
+  function resetEyes() {
+    pupils.forEach(p => { p.style.transform = 'translate(0px, 0px)'; });
+  }
+
+  /* ---------- champ email : lecture curieuse ---------- */
+  email.addEventListener('focus', () => { refresh(); trackEyes(email); });
+  email.addEventListener('input', () => trackEyes(email));
+  email.addEventListener('blur',  () => { refresh(); resetEyes(); });
+
+  /* ---------- champ mot de passe ---------- */
+  password.addEventListener('focus', () => { refresh(); if (!revealed) trackEyes(password); });
+  password.addEventListener('input', () => { if (!revealed) trackEyes(password); });
+  password.addEventListener('blur',  () => { refresh(); if (!revealed) resetEyes(); });
+
+  /* ---------- bouton afficher / masquer ---------- */
+  toggle.addEventListener('click', () => {
+    revealed = !revealed;
+    password.type = revealed ? 'text' : 'password';
+    iconShow.style.display = revealed ? 'none' : '';
+    iconHide.style.display = revealed ? '' : 'none';
+    toggle.setAttribute('aria-label', revealed ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+    refresh();
+    if (revealed) resetEyes(); else if (document.activeElement === password) trackEyes(password);
+    password.focus();
+  });
+
+  /* ---------- soumission (démo) ---------- */
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    hint.textContent = 'Connexion réussie (démo) — elles applaudissent en silence. 🎉';
+    body.classList.remove('state-email', 'state-password', 'state-reveal');
+    resetEyes();
+  });
+})();
+</script>
+</body>
+</html>
