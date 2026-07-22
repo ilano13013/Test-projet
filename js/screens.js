@@ -1,4 +1,7 @@
-/* Écrans de l'application (hors jeu) : auth, menu, niveaux, profil, paramètres. */
+/* Écrans de l'application (hors moteur de jeu) :
+   auth (connexion / inscription / oubli), menu, carte des mondes, sélection
+   des niveaux, profil, paramètres. La direction artistique d'origine est
+   conservée (silhouettes + cartes blanches sur fond bleu nuit). */
 window.LC = window.LC || {};
 
 LC.screens = (function () {
@@ -13,11 +16,17 @@ LC.screens = (function () {
       <line x1="1" y1="1" x2="23" y2="23"/>
     </svg>`;
 
-  function make(className, html) {
-    const el = document.createElement('div');
-    el.className = className;
-    el.innerHTML = html;
-    return el;
+  function make(cls, html) { const el = document.createElement('div'); el.className = cls; el.innerHTML = html; return el; }
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function formatTime(sec) {
+    if (sec == null) return '—';
+    const m = Math.floor(sec / 60), s = (sec % 60).toFixed(1).padStart(4, '0');
+    return `${String(m).padStart(2, '0')}:${s}`;
+  }
+  function starRow(n) { return [1, 2, 3].map(i => `<span class="${i <= n ? '' : 'off'}">★</span>`).join(''); }
+  function applyMotionPref() {
+    const u = LC.auth.current();
+    document.body.classList.toggle('reduced-motion', u ? LC.save.load(u.email).settings.reducedMotion : false);
   }
 
   function passwordField(id, label) {
@@ -26,26 +35,28 @@ LC.screens = (function () {
         <label for="${id}">${label}</label>
         <div class="input-wrap">
           <input type="password" id="${id}" data-password placeholder="••••••••">
-          <button type="button" class="toggle-pass" data-toggle="${id}" aria-label="Afficher le mot de passe" title="Afficher / masquer">
-            ${EYE_ICONS}
-          </button>
+          <button type="button" class="toggle-pass" data-toggle="${id}" aria-label="Afficher le mot de passe" title="Afficher / masquer">${EYE_ICONS}</button>
         </div>
       </div>`;
   }
 
-  function applyMotionPref() {
-    const user = LC.auth.current();
-    const reduced = user ? LC.save.load(user.email).settings.reducedMotion : false;
-    document.body.classList.toggle('reduced-motion', reduced);
-  }
-
-  /* ---------- écran avec silhouettes + carte (auth) ---------- */
   function authScene(cardHtml) {
     const el = make('screen auth-screen', `<div class="scene"><div class="card">${cardHtml}</div></div>`);
-    const scene = el.querySelector('.scene');
     const peeps = LC.peeps.create();
-    scene.prepend(peeps.el);
+    el.querySelector('.scene').prepend(peeps.el);
     return { el, peeps, card: el.querySelector('.card') };
+  }
+
+  function bindPeeps(el, peeps, emailIds, hints) {
+    const passInput = el.querySelector('#password');
+    const toggle = el.querySelector('.toggle-pass');
+    LC.peeps.bindForm(peeps, {
+      emailInputs: emailIds.map(id => el.querySelector('#' + id)).filter(Boolean),
+      passInput, toggleBtn: toggle,
+      iconShow: toggle && toggle.querySelector('.icon-show'),
+      iconHide: toggle && toggle.querySelector('.icon-hide'),
+      hintEl: el.querySelector('#hint'), hints,
+    });
   }
 
   /* ============================ CONNEXION ============================ */
@@ -54,63 +65,32 @@ LC.screens = (function () {
       <h1>Bon retour&nbsp;!</h1>
       <p class="subtitle">Connectez-vous… on ne regarde pas, promis.</p>
       <form id="loginForm" autocomplete="off"><fieldset>
-        <div class="field">
-          <label for="email">Adresse e-mail</label>
-          <div class="input-wrap"><input type="email" id="email" placeholder="vous@exemple.com" spellcheck="false"></div>
-        </div>
+        <div class="field"><label for="email">Adresse e-mail</label>
+          <div class="input-wrap"><input type="email" id="email" placeholder="vous@exemple.com" spellcheck="false"></div></div>
         ${passwordField('password', 'Mot de passe')}
         <button type="submit" class="btn">Se connecter</button>
         <p class="hint" id="hint"></p>
         <p class="alt-links"><a href="#/register">Créer un compte</a> · <a href="#/forgot">Mot de passe oublié&nbsp;?</a></p>
       </fieldset></form>`);
-
-    const form = el.querySelector('#loginForm');
-    const fieldset = form.querySelector('fieldset');
-    const email = el.querySelector('#email');
-    const password = el.querySelector('#password');
-    const toggle = el.querySelector('.toggle-pass');
-    const hint = el.querySelector('#hint');
-
-    LC.peeps.bindForm(peeps, {
-      emailInputs: [email],
-      passInput: password,
-      toggleBtn: toggle,
-      iconShow: toggle.querySelector('.icon-show'),
-      iconHide: toggle.querySelector('.icon-hide'),
-      hintEl: hint,
-      hints: {
-        idle: '',
-        email: 'Elles lisent par-dessus votre épaule… 👀',
-        password: 'Chut… elles essaient de deviner votre mot de passe.',
-        reveal: 'Mot de passe visible : elles détournent le regard, promis !',
-      },
+    bindPeeps(el, peeps, ['email'], {
+      idle: '', email: 'Elles lisent par-dessus votre épaule… 👀',
+      password: 'Chut… elles essaient de deviner votre mot de passe.',
+      reveal: 'Mot de passe visible : elles détournent le regard, promis !',
     });
-
+    const form = el.querySelector('#loginForm'), fs = form.querySelector('fieldset');
+    const email = el.querySelector('#email'), password = el.querySelector('#password'), hint = el.querySelector('#hint');
     let timers = [];
-    form.addEventListener('submit', async (e) => {
+    form.addEventListener('submit', async e => {
       e.preventDefault();
-      hint.dataset.locked = '1';
-      hint.classList.remove('error', 'success');
-      try {
-        await LC.auth.login(email.value, password.value);
-      } catch (err) {
-        hint.classList.add('error');
-        hint.textContent = err.message;
-        delete hint.dataset.locked;
-        return;
-      }
-      /* Séquence de succès : formulaire désactivé, message, regard vers
-         l'utilisateur, fondu de la carte, puis redirection vers le menu. */
-      fieldset.disabled = true;
-      hint.classList.add('success');
+      hint.dataset.locked = '1'; hint.classList.remove('error', 'success');
+      try { await LC.auth.login(email.value, password.value); }
+      catch (err) { hint.classList.add('error'); hint.textContent = err.message; delete hint.dataset.locked; return; }
+      fs.disabled = true; hint.classList.add('success');
       hint.textContent = 'Identité confirmée. Les Curieux vous ont reconnu.';
-      peeps.resetEyes();
-      peeps.setState('hello');
-      applyMotionPref();
+      peeps.resetEyes(); peeps.setState('hello'); applyMotionPref();
       timers.push(setTimeout(() => card.classList.add('fade-out'), 1300));
       timers.push(setTimeout(() => LC.router.go('/menu'), 2100));
     });
-
     return { el, cleanup: () => timers.forEach(clearTimeout) };
   }
 
@@ -120,54 +100,29 @@ LC.screens = (function () {
       <h1>Bienvenue parmi nous</h1>
       <p class="subtitle">Créez votre compte… elles sont déjà très intriguées.</p>
       <form id="registerForm" autocomplete="off"><fieldset>
-        <div class="field">
-          <label for="pseudo">Pseudonyme</label>
-          <div class="input-wrap"><input type="text" id="pseudo" placeholder="PetiteÉtoile" maxlength="20" spellcheck="false"></div>
-        </div>
-        <div class="field">
-          <label for="email">Adresse e-mail</label>
-          <div class="input-wrap"><input type="email" id="email" placeholder="vous@exemple.com" spellcheck="false"></div>
-        </div>
+        <div class="field"><label for="pseudo">Pseudonyme</label>
+          <div class="input-wrap"><input type="text" id="pseudo" placeholder="PetiteÉtoile" maxlength="20" spellcheck="false"></div></div>
+        <div class="field"><label for="email">Adresse e-mail</label>
+          <div class="input-wrap"><input type="email" id="email" placeholder="vous@exemple.com" spellcheck="false"></div></div>
         ${passwordField('password', 'Mot de passe (6 caractères min.)')}
         <button type="submit" class="btn">Créer mon compte</button>
         <p class="hint" id="hint"></p>
         <p class="alt-links">Déjà un compte&nbsp;? <a href="#/login">Se connecter</a></p>
       </fieldset></form>`);
-
-    const pseudo = el.querySelector('#pseudo');
-    const email = el.querySelector('#email');
-    const password = el.querySelector('#password');
-    const toggle = el.querySelector('.toggle-pass');
+    bindPeeps(el, peeps, ['pseudo', 'email'], {
+      email: 'Un nouveau visage ! Elles prennent des notes.',
+      password: 'Elles plissent les yeux… choisissez-le bien.',
+      reveal: 'Elles détournent poliment le regard.',
+    });
     const hint = el.querySelector('#hint');
-
-    LC.peeps.bindForm(peeps, {
-      emailInputs: [pseudo, email],
-      passInput: password,
-      toggleBtn: toggle,
-      iconShow: toggle.querySelector('.icon-show'),
-      iconHide: toggle.querySelector('.icon-hide'),
-      hintEl: hint,
-      hints: {
-        email: 'Un nouveau visage ! Elles prennent des notes.',
-        password: 'Elles plissent les yeux… choisissez-le bien.',
-        reveal: 'Elles détournent poliment le regard.',
-      },
-    });
-
-    el.querySelector('#registerForm').addEventListener('submit', async (e) => {
+    el.querySelector('#registerForm').addEventListener('submit', async e => {
       e.preventDefault();
-      hint.dataset.locked = '1';
-      hint.classList.remove('error');
+      hint.dataset.locked = '1'; hint.classList.remove('error');
       try {
-        await LC.auth.register({ pseudo: pseudo.value, email: email.value, password: password.value });
+        await LC.auth.register({ pseudo: el.querySelector('#pseudo').value, email: el.querySelector('#email').value, password: el.querySelector('#password').value });
         LC.router.go('/menu');
-      } catch (err) {
-        hint.classList.add('error');
-        hint.textContent = err.message;
-        delete hint.dataset.locked;
-      }
+      } catch (err) { hint.classList.add('error'); hint.textContent = err.message; delete hint.dataset.locked; }
     });
-
     return { el };
   }
 
@@ -177,238 +132,209 @@ LC.screens = (function () {
       <h1>Mot de passe oublié</h1>
       <p class="subtitle">Démo locale, sans e-mail : définissez-en un nouveau ici.</p>
       <form id="forgotForm" autocomplete="off"><fieldset>
-        <div class="field">
-          <label for="email">Adresse e-mail du compte</label>
-          <div class="input-wrap"><input type="email" id="email" placeholder="vous@exemple.com" spellcheck="false"></div>
-        </div>
+        <div class="field"><label for="email">Adresse e-mail du compte</label>
+          <div class="input-wrap"><input type="email" id="email" placeholder="vous@exemple.com" spellcheck="false"></div></div>
         ${passwordField('password', 'Nouveau mot de passe')}
         <button type="submit" class="btn">Réinitialiser</button>
         <p class="hint" id="hint"></p>
         <p class="alt-links"><a href="#/login">Retour à la connexion</a></p>
       </fieldset></form>`);
-
-    const email = el.querySelector('#email');
-    const password = el.querySelector('#password');
-    const toggle = el.querySelector('.toggle-pass');
+    bindPeeps(el, peeps, ['email'], {
+      email: 'Elles cherchent votre nom dans leurs souvenirs…',
+      password: 'Un nouveau secret ? Elles adorent les secrets.',
+      reveal: 'Rien vu, rien entendu.',
+    });
     const hint = el.querySelector('#hint');
-
-    LC.peeps.bindForm(peeps, {
-      emailInputs: [email],
-      passInput: password,
-      toggleBtn: toggle,
-      iconShow: toggle.querySelector('.icon-show'),
-      iconHide: toggle.querySelector('.icon-hide'),
-      hintEl: hint,
-      hints: {
-        email: 'Elles cherchent votre nom dans leurs souvenirs…',
-        password: 'Un nouveau secret ? Elles adorent les secrets.',
-        reveal: 'Rien vu, rien entendu.',
-      },
-    });
-
-    el.querySelector('#forgotForm').addEventListener('submit', async (e) => {
+    el.querySelector('#forgotForm').addEventListener('submit', async e => {
       e.preventDefault();
-      hint.dataset.locked = '1';
-      hint.classList.remove('error', 'success');
+      hint.dataset.locked = '1'; hint.classList.remove('error', 'success');
       try {
-        await LC.auth.resetPassword(email.value, password.value);
-        hint.classList.add('success');
-        hint.textContent = 'Mot de passe réinitialisé. Vous pouvez vous connecter.';
-      } catch (err) {
-        hint.classList.add('error');
-        hint.textContent = err.message;
-      }
+        await LC.auth.resetPassword(el.querySelector('#email').value, el.querySelector('#password').value);
+        hint.classList.add('success'); hint.textContent = 'Mot de passe réinitialisé. Vous pouvez vous connecter.';
+      } catch (err) { hint.classList.add('error'); hint.textContent = err.message; }
     });
-
     return { el };
   }
 
   /* ============================ MENU PRINCIPAL ============================ */
   function menuScreen() {
     applyMotionPref();
-    const user = LC.auth.current();
-    const stars = LC.save.totalStars(user.email);
-    const rank = LC.save.rank(user.email);
-    const levelIds = LC.game.LEVELS.map(l => l.id);
-    const next = LC.save.nextLevel(user.email, levelIds);
-    const hasProgress = LC.save.hasProgress(user.email);
-
+    const u = LC.auth.current();
+    const stars = LC.save.totalStars(u.email);
+    const next = LC.save.nextUnfinished(u.email);
+    const progress = LC.save.hasProgress(u.email);
     const { el, peeps } = authScene(`
       <div class="player-strip">
-        <span><span class="pseudo">${escapeHtml(user.pseudo)}</span> · Niveau ${rank}</span>
+        <span><span class="pseudo">${escapeHtml(u.pseudo)}</span> · Niveau ${LC.save.rank(u.email)}</span>
         <span class="badge-stars">★ ${stars}</span>
       </div>
       <h1>Les Curieux</h1>
       <p class="subtitle">Traversez la nuit sans vous faire remarquer.</p>
       <div class="menu-actions">
-        <button class="btn" data-go="/game/${hasProgress ? levelIds[0] : next}">Jouer</button>
-        ${hasProgress ? `<button class="btn-ghost" data-go="/game/${next}">Continuer — niveau ${next}</button>` : ''}
+        <button class="btn" data-go="/game/${next}">${progress ? 'Continuer' : 'Jouer'}</button>
+        <button class="btn-ghost" data-go="/game/daily">Défi du jour ✦</button>
         <div class="menu-grid">
-          <button class="btn-ghost" data-go="/levels">Niveaux</button>
+          <button class="btn-ghost" data-go="/worlds">Mondes</button>
           <button class="btn-ghost" data-go="/profile">Profil</button>
-          <button class="btn-ghost" data-go="/settings">Paramètres</button>
+          <button class="btn-ghost" data-go="/settings">Réglages</button>
         </div>
       </div>
       <div class="menu-foot"><button class="btn-link" id="logout">Se déconnecter</button></div>`);
-
     el.querySelector('.card').classList.add('menu-card');
-    peeps.setState('hello');
-    setTimeout(() => peeps.setState('idle'), 1400);
+    peeps.setState('hello'); setTimeout(() => peeps.setState('idle'), 1400);
+    el.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) LC.router.go(g.dataset.go); });
+    el.querySelector('#logout').addEventListener('click', () => { LC.auth.logout(); LC.router.go('/login'); });
+    return { el };
+  }
 
-    el.addEventListener('click', (e) => {
-      const go = e.target.closest('[data-go]');
-      if (go) LC.router.go(go.dataset.go);
-    });
-    el.querySelector('#logout').addEventListener('click', () => {
-      LC.auth.logout();
-      LC.router.go('/login');
-    });
-
+  /* ============================ CARTE DES MONDES ============================ */
+  function worldsScreen() {
+    const u = LC.auth.current();
+    const all = [...LC.levels.WORLDS.map(w => ({ ...w, real: true })), ...LC.levels.LOCKED_WORLDS.map(w => ({ ...w, real: false }))];
+    const cards = all.map(w => {
+      const unlocked = w.real && LC.save.isWorldUnlocked(u.email, w.id);
+      const totalLv = w.real ? w.levels.length : 10;
+      const maxStars = totalLv * 3;
+      const got = w.real ? LC.save.worldStars(u.email, w.id) : 0;
+      return `
+        <button class="world-card ${unlocked ? '' : 'locked'}" data-go="${unlocked ? '/world/' + w.id : ''}" ${unlocked ? '' : 'disabled'} style="--wc:${w.color}">
+          <span class="world-dot"></span>
+          <span class="world-info">
+            <span class="world-name">${w.id}. ${w.name} ${unlocked ? '' : '🔒'}</span>
+            <span class="world-sub">${w.subtitle}</span>
+          </span>
+          <span class="world-stars">★ ${got}/${maxStars}</span>
+        </button>`;
+    }).join('');
+    const el = make('screen', `
+      <div class="scene wide"><div class="card">
+        <div class="back-row"><button class="btn-link" data-go="/menu">← Menu</button></div>
+        <h1>Les mondes</h1>
+        <p class="subtitle">Cinq mondes à explorer. Le premier est ouvert.</p>
+        <div class="worlds-list">${cards}</div>
+      </div></div>`);
+    el.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g && g.dataset.go) LC.router.go(g.dataset.go); });
     return { el };
   }
 
   /* ========================= SÉLECTION DES NIVEAUX ========================= */
-  function levelsScreen() {
-    const user = LC.auth.current();
-    const data = LC.save.load(user.email);
-
-    const rows = LC.game.LEVELS.map((lv, i) => {
-      const prev = i === 0 ? null : LC.game.LEVELS[i - 1];
-      const locked = prev ? !(data.levels[prev.id] && data.levels[prev.id].stars) : false;
-      const rec = data.levels[lv.id];
+  function worldScreen(param) {
+    const u = LC.auth.current();
+    const world = LC.levels.getWorld(param);
+    if (!world) { LC.router.go('/worlds'); return { el: document.createElement('div') }; }
+    const tiles = world.levels.map(lv => {
+      const unlocked = LC.save.isLevelUnlocked(u.email, lv.id);
+      const rec = LC.save.getLevelRecord(u.email, lv.id);
       const stars = rec ? rec.stars : 0;
-      const starsHtml = [1, 2, 3].map(n => `<span class="${n <= stars ? '' : 'off'}">★</span>`).join('');
-      const sub = locked
-        ? `Terminez « ${prev.name} » pour déverrouiller`
-        : (rec && rec.bestTime != null ? `Meilleur temps : ${formatTime(rec.bestTime)}` : 'Jamais exploré');
       return `
-        <button class="level-row" data-level="${lv.id}" ${locked ? 'disabled' : ''}>
-          <span><span class="lv-name">${lv.id}. ${lv.name}</span><span class="lv-sub">${sub}</span></span>
-          <span class="lv-stars">${starsHtml}</span>
+        <button class="level-tile ${unlocked ? '' : 'locked'} ${lv.isBoss ? 'boss' : ''}" data-go="${unlocked ? '/game/' + lv.id : ''}" ${unlocked ? '' : 'disabled'}>
+          <span class="lt-num">${lv.isBoss ? '☠' : lv.index}</span>
+          <span class="lt-name">${unlocked ? lv.name : '🔒'}</span>
+          <span class="lt-stars">${starRow(stars)}</span>
+          <span class="lt-time">${rec && rec.bestTime != null ? formatTime(rec.bestTime) : ''}</span>
         </button>`;
     }).join('');
-
     const el = make('screen', `
-      <div class="scene"><div class="card">
-        <div class="back-row"><button class="btn-link" data-go="/menu">← Menu</button></div>
-        <h1>Niveaux</h1>
-        <p class="subtitle">Chaque traversée discrète vaut jusqu'à trois étoiles.</p>
-        <div class="levels-list">${rows}</div>
+      <div class="scene wide"><div class="card">
+        <div class="back-row"><button class="btn-link" data-go="/worlds">← Mondes</button></div>
+        <h1>${world.id}. ${world.name}</h1>
+        <p class="subtitle">${world.subtitle}</p>
+        <div class="levels-grid">${tiles}</div>
       </div></div>`);
-
-    el.addEventListener('click', (e) => {
-      const go = e.target.closest('[data-go]');
-      if (go) { LC.router.go(go.dataset.go); return; }
-      const row = e.target.closest('.level-row');
-      if (row && !row.disabled) LC.router.go('/game/' + row.dataset.level);
-    });
-
+    el.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g && g.dataset.go) LC.router.go(g.dataset.go); });
     return { el };
   }
 
   /* ============================ PROFIL ============================ */
   function profileScreen() {
-    const user = LC.auth.current();
-    const data = LC.save.load(user.email);
-    const stars = LC.save.totalStars(user.email);
-    const unlocked = LC.save.unlockedSkins(user.email);
-    const completed = Object.values(data.levels).filter(l => l.stars > 0).length;
-
+    const u = LC.auth.current();
+    const stars = LC.save.totalStars(u.email);
+    const unlocked = LC.save.unlockedSkins(u.email);
+    const data = LC.save.load(u.email);
+    let done = 0, total = 0;
+    for (const w of LC.levels.WORLDS) for (const l of w.levels) { total++; const r = LC.save.getLevelRecord(u.email, l.id); if (r && r.stars > 0) done++; }
     const skinChips = LC.save.SKINS.map(s => {
-      const isUnlocked = unlocked.some(u => u.id === s.id);
-      const active = data.skin === s.id;
-      return `
-        <button class="skin-chip ${active ? 'active' : ''}" data-skin="${s.id}" ${isUnlocked ? '' : 'disabled'}
-                title="${isUnlocked ? 'Choisir cette apparence' : `Débloquée à ${s.cost} ★`}">
-          <span class="skin-dot" style="background:${s.color}; color:${s.color}"></span>
-          ${s.name}${isUnlocked ? '' : ` · ${s.cost}★`}
-        </button>`;
+      const ok = unlocked.some(x => x.id === s.id), active = data.skin === s.id;
+      return `<button class="skin-chip ${active ? 'active' : ''}" data-skin="${s.id}" ${ok ? '' : 'disabled'} title="${ok ? 'Choisir' : 'Débloquée à ' + s.cost + ' ★'}">
+        <span class="skin-dot" style="background:${s.color};color:${s.color}"></span>${s.name}${ok ? '' : ' · ' + s.cost + '★'}</button>`;
     }).join('');
-
-    const levelRows = LC.game.LEVELS.map(lv => {
-      const rec = data.levels[lv.id];
-      const v = rec ? `${'★'.repeat(rec.stars)} · ${formatTime(rec.bestTime)}` : '—';
-      return `<div class="stat-row"><span class="k">${lv.id}. ${lv.name}</span><span class="v">${v}</span></div>`;
-    }).join('');
-
     const el = make('screen', `
       <div class="scene"><div class="card">
         <div class="back-row"><button class="btn-link" data-go="/menu">← Menu</button></div>
-        <h1>${escapeHtml(user.pseudo)}</h1>
-        <p class="subtitle">${escapeHtml(user.email)} · Niveau ${LC.save.rank(user.email)} · ★ ${stars}</p>
+        <h1>${escapeHtml(u.pseudo)}</h1>
+        <p class="subtitle">${escapeHtml(u.email)} · Niveau ${LC.save.rank(u.email)} · ★ ${stars}</p>
         <div class="stat-rows">
-          <div class="stat-row"><span class="k">Niveaux terminés</span><span class="v">${completed} / ${LC.game.LEVELS.length}</span></div>
-          ${levelRows}
+          <div class="stat-row"><span class="k">Niveaux terminés</span><span class="v">${done} / ${total}</span></div>
+          <div class="stat-row"><span class="k">Étoiles récoltées</span><span class="v">${stars}</span></div>
         </div>
         <p class="subtitle" style="margin-bottom:10px">Apparence de votre étoile</p>
         <div class="skin-list">${skinChips}</div>
         <button class="btn-ghost" id="logout">Se déconnecter</button>
       </div></div>`);
-
-    el.addEventListener('click', (e) => {
-      const go = e.target.closest('[data-go]');
-      if (go) { LC.router.go(go.dataset.go); return; }
+    el.addEventListener('click', e => {
+      const g = e.target.closest('[data-go]'); if (g) { LC.router.go(g.dataset.go); return; }
       const chip = e.target.closest('.skin-chip');
-      if (chip && !chip.disabled) {
-        LC.save.setSkin(user.email, chip.dataset.skin);
-        el.querySelectorAll('.skin-chip').forEach(c => c.classList.toggle('active', c === chip));
-      }
+      if (chip && !chip.disabled) { LC.save.setSkin(u.email, chip.dataset.skin); el.querySelectorAll('.skin-chip').forEach(c => c.classList.toggle('active', c === chip)); }
     });
-    el.querySelector('#logout').addEventListener('click', () => {
-      LC.auth.logout();
-      LC.router.go('/login');
-    });
-
+    el.querySelector('#logout').addEventListener('click', () => { LC.auth.logout(); LC.router.go('/login'); });
     return { el };
   }
 
   /* ============================ PARAMÈTRES ============================ */
-  function settingsScreen() {
-    const user = LC.auth.current();
-    const settings = LC.save.load(user.email).settings;
+  const ACTION_LABELS = { up: 'Haut', down: 'Bas', left: 'Gauche', right: 'Droite', sprint: 'Sprint', noise: 'Bruit', pause: 'Pause' };
+  const KEY_LABEL = c => c.replace(/^Key/, '').replace(/^Arrow/, '↑↓←→'[['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(c)] || '').replace('Digit', '').replace('Space', 'Espace').replace('ShiftLeft', 'Maj').replace('ShiftRight', 'Maj D').replace('Escape', 'Échap');
 
+  function settingsScreen() {
+    const u = LC.auth.current();
+    const s = LC.save.load(u.email).settings;
+    let binds = LC.save.getKeybinds(u.email);
+    const toggle = (id, key, label, sub) => `
+      <label class="switch-row"><span>${label}<span class="sw-sub">${sub}</span></span>
+        <input type="checkbox" class="switch" id="${id}" ${s[key] ? 'checked' : ''}></label>`;
+    function bindRows() {
+      return Object.keys(ACTION_LABELS).map(a => `
+        <div class="bind-row"><span class="bind-label">${ACTION_LABELS[a]}</span>
+          <span class="bind-keys">${binds[a].map(KEY_LABEL).join(' · ')}</span>
+          <button class="btn-mini" data-bind="${a}">Modifier</button></div>`).join('');
+    }
     const el = make('screen', `
-      <div class="scene"><div class="card">
+      <div class="scene wide"><div class="card">
         <div class="back-row"><button class="btn-link" data-go="/menu">← Menu</button></div>
-        <h1>Paramètres</h1>
-        <p class="subtitle">Réglages enregistrés avec votre compte.</p>
-        <label class="switch-row">
-          <span>Champs de vision discrets<span class="sw-sub">N'affiche que le contour du regard des Curieux</span></span>
-          <input type="checkbox" class="switch" id="subtleVision" ${settings.subtleVision ? 'checked' : ''}>
-        </label>
-        <label class="switch-row">
-          <span>Réduire les animations<span class="sw-sub">Limite les mouvements du décor et des menus</span></span>
-          <input type="checkbox" class="switch" id="reducedMotion" ${settings.reducedMotion ? 'checked' : ''}>
-        </label>
-        <div class="stat-row" style="margin-top:8px"><span class="k">Déplacement</span><span class="v">Flèches · ZQSD · WASD · joystick tactile</span></div>
-        <div class="stat-row" style="margin-top:8px"><span class="k">Distraction</span><span class="v">Clic / tap dans le niveau : petit bruit</span></div>
+        <h1>Réglages</h1>
+        <p class="subtitle">Enregistrés avec votre compte.</p>
+        ${toggle('reducedMotion', 'reducedMotion', 'Réduire les animations', 'Limite les mouvements du décor et des menus')}
+        ${toggle('disableShake', 'disableShake', 'Désactiver les secousses de caméra', 'Aucun tremblement lors des détections')}
+        ${toggle('hideCones', 'hideCones', 'Masquer les champs de vision', 'Mode expert : les cônes ne sont plus dessinés')}
+        <p class="subtitle" style="margin:16px 0 8px">Touches (clavier)</p>
+        <div class="binds" id="binds">${bindRows()}</div>
+        <button class="btn-link" id="resetBinds">Réinitialiser les touches</button>
       </div></div>`);
 
-    el.addEventListener('click', (e) => {
-      const go = e.target.closest('[data-go]');
-      if (go) LC.router.go(go.dataset.go);
+    el.addEventListener('click', e => {
+      const g = e.target.closest('[data-go]'); if (g) { LC.router.go(g.dataset.go); return; }
+      const b = e.target.closest('[data-bind]');
+      if (b) {
+        b.textContent = 'Appuyez…';
+        const onKey = ev => {
+          ev.preventDefault();
+          LC.save.setKeybind(u.email, b.dataset.bind, [ev.code]);
+          binds = LC.save.getKeybinds(u.email);
+          el.querySelector('#binds').innerHTML = bindRows();
+          window.removeEventListener('keydown', onKey, true);
+        };
+        window.addEventListener('keydown', onKey, true);
+      }
     });
-    el.querySelector('#subtleVision').addEventListener('change', (e) => {
-      LC.save.setSetting(user.email, 'subtleVision', e.target.checked);
+    el.querySelectorAll('.switch').forEach(sw => sw.addEventListener('change', e => {
+      LC.save.setSetting(u.email, e.target.id, e.target.checked);
+      if (e.target.id === 'reducedMotion') applyMotionPref();
+    }));
+    el.querySelector('#resetBinds').addEventListener('click', () => {
+      LC.save.resetKeybinds(u.email); binds = LC.save.getKeybinds(u.email);
+      el.querySelector('#binds').innerHTML = bindRows();
     });
-    el.querySelector('#reducedMotion').addEventListener('change', (e) => {
-      LC.save.setSetting(user.email, 'reducedMotion', e.target.checked);
-      applyMotionPref();
-    });
-
     return { el };
   }
 
-  /* ---------- utilitaires ---------- */
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  }
-  function formatTime(seconds) {
-    if (seconds == null) return '—';
-    const m = Math.floor(seconds / 60);
-    const s = (seconds % 60).toFixed(1).padStart(4, '0');
-    return `${String(m).padStart(2, '0')}:${s}`;
-  }
-
-  return { loginScreen, registerScreen, forgotScreen, menuScreen, levelsScreen, profileScreen, settingsScreen, formatTime };
+  return { loginScreen, registerScreen, forgotScreen, menuScreen, worldsScreen, worldScreen, profileScreen, settingsScreen, formatTime };
 })();

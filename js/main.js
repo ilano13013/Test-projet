@@ -1,4 +1,4 @@
-/* Point d'entrée : décor étoilé, enregistrement des routes, premier rendu. */
+/* Point d'entrée : décor étoilé de fond, enregistrement des routes, rendu. */
 (function () {
   const stars = document.getElementById('stars');
   for (let i = 0; i < 40; i++) {
@@ -14,7 +14,8 @@
   R.register('register', LC.screens.registerScreen, { guest: true });
   R.register('forgot', LC.screens.forgotScreen, { guest: true });
   R.register('menu', LC.screens.menuScreen, { auth: true });
-  R.register('levels', LC.screens.levelsScreen, { auth: true });
+  R.register('worlds', LC.screens.worldsScreen, { auth: true });
+  R.register('world', LC.screens.worldScreen, { auth: true });
   R.register('game', LC.game.createGameScreen, { auth: true });
   R.register('profile', LC.screens.profileScreen, { auth: true });
   R.register('settings', LC.screens.settingsScreen, { auth: true });
