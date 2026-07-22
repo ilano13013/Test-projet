@@ -105,12 +105,12 @@ LC.game = (function () {
       <div class="game-wrap" id="wrap">
         <canvas id="gameCanvas"></canvas>
         <div class="tuto-banner" id="tuto" hidden></div>
-        <div class="touch-controls">
-          <div class="joystick" id="joystick"><div class="thumb" id="joyThumb"></div></div>
-          <button class="sprint-btn" id="sprintBtn">Sprint</button>
-        </div>
-        <div class="game-overlay" id="overlay"><div class="overlay-card" id="overlayCard"></div></div>
-      </div>`;
+      </div>
+      <div class="touch-controls">
+        <div class="joystick" id="joystick"><div class="thumb" id="joyThumb"></div></div>
+        <button class="sprint-btn" id="sprintBtn">Sprint</button>
+      </div>
+      <div class="game-overlay" id="overlay"><div class="overlay-card" id="overlayCard"></div></div>`;
 
     const canvas = el.querySelector('#gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -121,6 +121,8 @@ LC.game = (function () {
     const dangerFill = el.querySelector('#dangerFill');
     const overlay = el.querySelector('#overlay');
     const overlayCard = el.querySelector('#overlayCard');
+    /* l'overlay couvre tout le viewport (résultats/pause/objectifs jamais coupés) */
+    document.body.appendChild(overlay);
     const tuto = el.querySelector('#tuto');
     const joystick = el.querySelector('#joystick');
     const joyThumb = el.querySelector('#joyThumb');
@@ -800,6 +802,7 @@ LC.game = (function () {
       cleanup() {
         cancelAnimationFrame(rafId);
         ro.disconnect();
+        overlay.remove();
         window.removeEventListener('keydown', onKeyDown);
         window.removeEventListener('keyup', onKeyUp);
         window.removeEventListener('blur', onBlur);

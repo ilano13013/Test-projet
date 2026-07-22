@@ -612,3 +612,54 @@ fieldset:disabled { opacity: .75; }
 .bind-keys { flex: 1; color: var(--muted); font-variant-numeric: tabular-nums; }
 .btn-mini { border: 2px solid #e4e6f0; background: #fff; border-radius: 8px; padding: 4px 10px; font: inherit; font-size: .76rem; color: var(--accent-dark); cursor: pointer; }
 .btn-mini:hover { border-color: var(--accent); }
+
+/* ============================================================
+   Correctifs mobile — overlays plein écran + contrôles sous le jeu
+   ============================================================ */
+
+/* Overlays (objectifs / pause / résultats) : couvrent tout le viewport et
+   défilent si nécessaire, au lieu d'être coincés dans une zone de jeu courte. */
+.game-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  padding: 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.game-overlay .overlay-card {
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  margin: auto;
+}
+
+/* HUD : autorise le retour à la ligne sur écran très étroit. */
+.game-hud { flex-wrap: wrap; row-gap: 6px; }
+
+/* Contrôles tactiles : barre dédiée SOUS le canvas (plus de chevauchement). */
+.touch-controls { display: none; }
+@media (pointer: coarse) {
+  .touch-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 16px;
+    padding: 4px 10px;
+  }
+}
+/* On annule le positionnement flottant d'origine : éléments dans le flux. */
+.touch-controls .joystick {
+  position: relative;
+  left: auto; bottom: auto;
+  display: block;
+  width: 132px; height: 132px;
+  margin: 0; flex: none;
+}
+.touch-controls .joystick .thumb { width: 54px; height: 54px; }
+.touch-controls .sprint-btn {
+  position: relative;
+  right: auto; bottom: auto;
+  width: 108px; height: 108px;
+  flex: none;
+}
