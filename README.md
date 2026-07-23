@@ -14,6 +14,16 @@ xdg-open index.html    # Linux
 open index.html        # macOS
 ```
 
+## Contenu
+
+- **Monde 1 — Le Vestibule** : 10 niveaux + boss (initiation aux trois Curieux,
+  cachettes, bruit, interrupteurs).
+- **Monde 2 — La Galerie** : 10 niveaux + boss *Le Régisseur*, débloqué après
+  avoir terminé le Monde 1. Introduit les **Curieux en patrouille** (trajets
+  définis), des salles plus grandes, davantage de portes/interrupteurs et un
+  niveau expert **sans cônes de vision**.
+- Mondes 3 à 5 : emplacements réservés (à venir).
+
 ## Architecture (SPA vanilla, namespace global `LC`, canvas 2D)
 
 ```

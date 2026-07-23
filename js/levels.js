@@ -237,10 +237,196 @@ LC.levels = (function () {
     ],
   };
 
-  const WORLDS = [world1];
-  /* Emplacements réservés : mondes 2 à 5 (verrouillés, à remplir plus tard). */
+  /* ============================================================
+     MONDE 2 — La Galerie
+     Introduit les Curieux EN PATROUILLE (trajets définis), des salles plus
+     grandes, davantage d'interrupteurs/portes, et un niveau expert sans cônes.
+     ============================================================ */
+  const world2 = {
+    id: 2,
+    name: 'La Galerie',
+    subtitle: 'Des salles feutrées où chaque œil suit un trajet.',
+    color: '#7ef0d4',
+    levels: [
+      /* ---- 2-1 à 2-3 : patrouilles ---- */
+      {
+        id: '2-1', world: 2, index: 1, name: 'Vernissage',
+        size: { w: 1000, h: 620 }, start: { x: 60, y: 540 },
+        exit: { x: 920, y: 60, w: 44, h: 80 }, targetTime: 30, hearts: 3,
+        walls: [{ x: 300, y: 360, w: 44, h: 200 }, { x: 500, y: 120, w: 44, h: 200 }, { x: 700, y: 360, w: 44, h: 200 }],
+        fragments: [{ x: 420, y: 300 }, { x: 760, y: 170 }],
+        enemies: [
+          { type: 'guetteur', x: 200, y: 300, angle: 0, vision: V(300, 0.82), patrol: { points: [{ x: 200, y: 300 }, { x: 820, y: 300 }], speed: 78 } },
+        ],
+        objectives: [{ id: 'frag', label: 'Récupérer les 2 fragments', type: 'allFragments' }],
+        tutorials: [{ at: 'start', text: 'Ici, certains Curieux patrouillent le long d’un trajet. Observez leur va-et-vient avant de vous lancer.' }],
+      },
+      {
+        id: '2-2', world: 2, index: 2, name: 'Ronde de nuit',
+        size: { w: 1040, h: 640 }, start: { x: 60, y: 60 },
+        exit: { x: 960, y: 560, w: 44, h: 80 }, targetTime: 42, hearts: 3,
+        walls: [{ x: 240, y: 160, w: 44, h: 240 }, { x: 460, y: 320, w: 44, h: 260 }, { x: 680, y: 120, w: 44, h: 240 }, { x: 840, y: 360, w: 44, h: 240 }],
+        fragments: [{ x: 150, y: 360 }, { x: 600, y: 90 }, { x: 900, y: 300 }],
+        enemies: [
+          { type: 'guetteur', x: 200, y: 260, angle: 0, vision: V(280, 0.8), patrol: { points: [{ x: 200, y: 260 }, { x: 860, y: 260 }], speed: 88 } },
+          { type: 'guetteur', x: 520, y: 580, angle: -Math.PI / 2, vision: V(280, 0.8), patrol: { points: [{ x: 520, y: 580 }, { x: 520, y: 320 }], speed: 74 } },
+        ],
+        objectives: [
+          { id: 'frag', label: 'Récupérer les 3 fragments', type: 'allFragments' },
+          { id: 'noDetect', label: 'Aucune détection', type: 'noDetect' },
+        ],
+        tutorials: [{ at: 'start', text: 'Deux rondes se croisent. Synchronisez vos passages avec les trous dans leur trajet.' }],
+      },
+      {
+        id: '2-3', world: 2, index: 3, name: 'Le corridor',
+        size: { w: 1100, h: 600 }, start: { x: 60, y: 60 },
+        exit: { x: 1020, y: 460, w: 44, h: 80 }, targetTime: 48, hearts: 3,
+        walls: [{ x: 160, y: 160, w: 560, h: 44 }, { x: 380, y: 380, w: 560, h: 44 }, { x: 900, y: 60, w: 44, h: 160 }],
+        fragments: [{ x: 260, y: 300 }, { x: 640, y: 100 }, { x: 980, y: 300 }],
+        enemies: [
+          { type: 'mefiant', x: 300, y: 520, angle: 0, vision: V(280, 0.82), patrol: { points: [{ x: 300, y: 520 }, { x: 1000, y: 520 }], speed: 70 } },
+          { type: 'guetteur', x: 200, y: 100, angle: Math.PI / 2, vision: V(320, 0.75), sweep: { base: Math.PI / 2, amp: 0.9, speed: 0.55 } },
+        ],
+        objectives: [{ id: 'frag', label: 'Récupérer les 3 fragments', type: 'allFragments' }],
+        tutorials: [{ at: 'start', text: 'Un Méfiant patrouille : s’il vous aperçoit, il retiendra où et anticipera. Ne le laissez pas vous cadrer.' }],
+      },
+
+      /* ---- 2-4 à 2-6 : bruit, interrupteurs, sons ---- */
+      {
+        id: '2-4', world: 2, index: 4, name: 'Silence',
+        size: { w: 1080, h: 640 }, start: { x: 60, y: 560 },
+        exit: { x: 1000, y: 60, w: 44, h: 80 }, targetTime: 46, hearts: 3,
+        walls: [{ x: 540, y: 0, w: 44, h: 220 }, { x: 540, y: 420, w: 44, h: 220 }, { x: 260, y: 300, w: 44, h: 200 }, { x: 800, y: 160, w: 44, h: 200 }],
+        doors: [{ id: 'd1', x: 540, y: 220, w: 44, h: 200 }],
+        switches: [{ id: 's1', x: 150, y: 120, opens: ['d1'] }],
+        fragments: [{ x: 380, y: 560 }, { x: 700, y: 90 }, { x: 940, y: 560 }],
+        enemies: [
+          { type: 'distrait', x: 620, y: 320, angle: 0, vision: V(300, 0.95), sweep: { base: 0, amp: 2.2, speed: 0.5 } },
+          { type: 'guetteur', x: 900, y: 300, angle: Math.PI, vision: V(300, 0.78), patrol: { points: [{ x: 900, y: 300 }, { x: 900, y: 560 }], speed: 76 } },
+        ],
+        objectives: [{ id: 'frag', label: 'Récupérer les 3 fragments', type: 'allFragments' }],
+        tutorials: [{ at: 'start', text: 'L’interrupteur ouvre la porte du couloir. Le Distrait la garde : un bruit au bon moment vous ouvre la voie.' }],
+      },
+      {
+        id: '2-5', world: 2, index: 5, name: 'Cimaises',
+        size: { w: 1120, h: 660 }, start: { x: 60, y: 60 },
+        exit: { x: 1040, y: 560, w: 44, h: 80, needs: 3 }, targetTime: 52, hearts: 3,
+        walls: [{ x: 220, y: 180, w: 44, h: 320 }, { x: 440, y: 0, w: 44, h: 280 }, { x: 440, y: 420, w: 44, h: 240 }, { x: 680, y: 200, w: 44, h: 320 }, { x: 900, y: 0, w: 44, h: 260 }],
+        fragments: [{ x: 330, y: 580 }, { x: 560, y: 90 }, { x: 800, y: 360 }],
+        enemies: [
+          { type: 'guetteur', x: 330, y: 340, angle: 0, vision: V(300, 0.8), patrol: { points: [{ x: 330, y: 340 }, { x: 330, y: 600 }], speed: 80 } },
+          { type: 'distrait', x: 560, y: 360, angle: Math.PI / 2, vision: V(300, 0.95), sweep: { base: Math.PI / 2, amp: 2.0, speed: 0.5 } },
+          { type: 'mefiant', x: 980, y: 360, angle: Math.PI, vision: V(280, 0.82), sweep: { base: Math.PI, amp: 1.1, speed: 0.5 } },
+        ],
+        objectives: [
+          { id: 'frag', label: 'Les 3 fragments ouvrent la sortie', type: 'allFragments' },
+          { id: 'noDetect', label: 'Aucune détection', type: 'noDetect' },
+        ],
+        tutorials: [{ at: 'start', text: 'La sortie ne s’ouvre qu’avec les 3 fragments. Trois surveillants, trois styles.' }],
+      },
+      {
+        id: '2-6', world: 2, index: 6, name: 'Salle des sons',
+        size: { w: 1080, h: 640 }, start: { x: 60, y: 320 },
+        exit: { x: 1000, y: 280, w: 44, h: 80 }, targetTime: 50, hearts: 3,
+        walls: [{ x: 300, y: 120, w: 44, h: 160 }, { x: 300, y: 360, w: 44, h: 160 }, { x: 560, y: 220, w: 44, h: 200 }, { x: 800, y: 120, w: 44, h: 160 }, { x: 800, y: 360, w: 44, h: 160 }],
+        fragments: [{ x: 470, y: 110 }, { x: 470, y: 530 }, { x: 930, y: 320 }],
+        enemies: [
+          { type: 'distrait', x: 420, y: 320, angle: 0, vision: V(280, 0.95), sweep: { base: 0, amp: 2.6, speed: 0.55 } },
+          { type: 'distrait', x: 700, y: 320, angle: Math.PI, vision: V(280, 0.95), sweep: { base: Math.PI, amp: 2.6, speed: 0.5 } },
+          { type: 'guetteur', x: 930, y: 120, angle: Math.PI / 2, vision: V(320, 0.75), sweep: { base: Math.PI / 2, amp: 0.8, speed: 0.5 } },
+        ],
+        objectives: [
+          { id: 'frag', label: 'Récupérer les 3 fragments', type: 'allFragments' },
+          { id: 'time', label: 'Battre le temps cible', type: 'underTime' },
+        ],
+        tutorials: [{ at: 'start', text: 'Deux Distraits : un seul bruit peut en attirer un pendant que vous gérez l’autre. Attention au rechargement.' }],
+      },
+
+      /* ---- 2-7 à 2-9 : Méfiants, portes, obscurité ---- */
+      {
+        id: '2-7', world: 2, index: 7, name: 'Le conservateur',
+        size: { w: 1120, h: 660 }, start: { x: 60, y: 600 },
+        exit: { x: 1040, y: 60, w: 44, h: 80 }, targetTime: 55, hearts: 3,
+        walls: [{ x: 220, y: 200, w: 300, h: 44 }, { x: 220, y: 200, w: 44, h: 280 }, { x: 620, y: 320, w: 300, h: 44 }, { x: 620, y: 364, w: 44, h: 280 }],
+        fragments: [{ x: 360, y: 360 }, { x: 760, y: 220 }, { x: 1000, y: 560 }],
+        enemies: [
+          { type: 'mefiant', x: 300, y: 560, angle: 0, vision: V(280, 0.82), patrol: { points: [{ x: 300, y: 560 }, { x: 560, y: 560 }, { x: 560, y: 300 }], speed: 72 } },
+          { type: 'mefiant', x: 900, y: 200, angle: Math.PI, vision: V(280, 0.82), sweep: { base: Math.PI, amp: 1.2, speed: 0.5 } },
+          { type: 'guetteur', x: 760, y: 480, angle: -Math.PI / 2, vision: V(320, 0.72), sweep: { base: -Math.PI / 2, amp: 0.8, speed: 0.6 } },
+        ],
+        objectives: [{ id: 'frag', label: 'Récupérer les 3 fragments', type: 'allFragments' }],
+        tutorials: [{ at: 'start', text: 'Deux Méfiants, dont un en ronde. Leur mémoire est longue : variez vos itinéraires.' }],
+      },
+      {
+        id: '2-8', world: 2, index: 8, name: 'Portes closes',
+        size: { w: 1160, h: 680 }, start: { x: 60, y: 60 },
+        exit: { x: 1080, y: 580, w: 44, h: 80 }, targetTime: 58, hearts: 3,
+        walls: [{ x: 300, y: 0, w: 44, h: 420 }, { x: 560, y: 260, w: 44, h: 420 }, { x: 820, y: 0, w: 44, h: 420 }],
+        doors: [{ id: 'd1', x: 300, y: 420, w: 44, h: 120 }, { id: 'd2', x: 820, y: 420, w: 44, h: 120 }],
+        switches: [{ id: 's1', x: 160, y: 560, opens: ['d1'] }, { id: 's2', x: 700, y: 90, opens: ['d2'] }],
+        fragments: [{ x: 430, y: 560 }, { x: 690, y: 90 }, { x: 1000, y: 560 }],
+        enemies: [
+          { type: 'mefiant', x: 430, y: 300, angle: -Math.PI / 2, vision: V(300, 0.8), sweep: { base: -Math.PI / 2, amp: 1.0, speed: 0.5 } },
+          { type: 'distrait', x: 690, y: 460, angle: 0, vision: V(280, 0.95), sweep: { base: 0, amp: 1.8, speed: 0.6 } },
+          { type: 'guetteur', x: 950, y: 300, angle: Math.PI, vision: V(320, 0.75), patrol: { points: [{ x: 950, y: 300 }, { x: 950, y: 560 }], speed: 80 } },
+        ],
+        objectives: [
+          { id: 'frag', label: 'Récupérer les 3 fragments', type: 'allFragments' },
+          { id: 'noDetect', label: 'Aucune détection', type: 'noDetect' },
+        ],
+        tutorials: [{ at: 'start', text: 'Deux interrupteurs, deux portes. Chaque passage se mérite.' }],
+      },
+      {
+        id: '2-9', world: 2, index: 9, name: 'Sans lumière',
+        size: { w: 1120, h: 660 }, start: { x: 60, y: 60 },
+        exit: { x: 1040, y: 560, w: 44, h: 80 }, targetTime: 62, hearts: 3, hideCones: true,
+        walls: [{ x: 240, y: 180, w: 44, h: 320 }, { x: 460, y: 0, w: 44, h: 300 }, { x: 460, y: 440, w: 44, h: 220 }, { x: 680, y: 200, w: 44, h: 320 }, { x: 900, y: 0, w: 44, h: 280 }],
+        fragments: [{ x: 350, y: 580 }, { x: 580, y: 90 }, { x: 990, y: 340 }],
+        enemies: [
+          { type: 'guetteur', x: 350, y: 340, angle: 0, vision: V(300, 0.8), sweep: { base: 0, amp: 1.2, speed: 0.55 } },
+          { type: 'distrait', x: 580, y: 360, angle: Math.PI / 2, vision: V(280, 0.95), sweep: { base: Math.PI / 2, amp: 1.8, speed: 0.5 } },
+          { type: 'mefiant', x: 990, y: 340, angle: Math.PI, vision: V(280, 0.82), patrol: { points: [{ x: 990, y: 340 }, { x: 990, y: 120 }], speed: 68 } },
+        ],
+        objectives: [{ id: 'frag', label: 'Récupérer les 3 fragments', type: 'allFragments' }],
+        tutorials: [{ at: 'start', text: 'Ici les cônes sont invisibles : lisez le regard et l’orientation des Curieux pour deviner leur champ de vision.' }],
+      },
+
+      /* ---- 2-10 : boss ---- */
+      {
+        id: '2-10', world: 2, index: 10, name: 'Le Régisseur',
+        size: { w: 1200, h: 780 }, start: { x: 600, y: 720 },
+        exit: { x: 578, y: 40, w: 60, h: 70, needs: 3 }, targetTime: 100, hearts: 3,
+        isBoss: true,
+        walls: [
+          { x: 140, y: 220, w: 180, h: 44 }, { x: 880, y: 220, w: 180, h: 44 },
+          { x: 140, y: 540, w: 180, h: 44 }, { x: 880, y: 540, w: 180, h: 44 },
+          { x: 540, y: 360, w: 120, h: 80 },
+        ],
+        fragments: [{ x: 210, y: 380 }, { x: 990, y: 380 }, { x: 600, y: 170 }],
+        checkpoints: [{ x: 600, y: 580 }],
+        boss: {
+          x: 600, y: 400, phases: [
+            { vision: V(400, 1.2), speed: 0.45, move: null },
+            { vision: V(460, 1.4), speed: 0.75, move: { r: 190, speed: 0.6 } },
+            { vision: V(320, 2.4), speed: 1.1, move: { r: 250, speed: 1.1 } },
+          ],
+        },
+        enemies: [
+          { type: 'distrait', x: 220, y: 700, angle: 0, vision: V(240, 0.95), patrol: { points: [{ x: 220, y: 700 }, { x: 980, y: 700 }], speed: 84 } },
+        ],
+        objectives: [
+          { id: 'frag', label: 'Récupérer les 3 fragments', type: 'allFragments' },
+          { id: 'noDetect', label: 'Aucune détection', type: 'noDetect' },
+        ],
+        tutorials: [{ at: 'start', text: 'Le Régisseur veille sur toute la galerie. Chaque fragment récupéré l’affaiblit… et l’irrite davantage.' }],
+        cinematic: true,
+      },
+    ],
+  };
+
+  const WORLDS = [world1, world2];
+  /* Emplacements réservés : mondes 3 à 5 (verrouillés, à remplir plus tard). */
   const LOCKED_WORLDS = [
-    { id: 2, name: 'La Galerie', subtitle: 'Bientôt.', color: '#7ef0d4' },
     { id: 3, name: 'Le Grenier', subtitle: 'Bientôt.', color: '#ffb45b' },
     { id: 4, name: 'La Volière', subtitle: 'Bientôt.', color: '#ff9ad5' },
     { id: 5, name: 'Le Dôme', subtitle: 'Bientôt.', color: '#c58bff' },
