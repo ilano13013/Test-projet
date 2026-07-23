@@ -28,11 +28,12 @@ LC.game = (function () {
   }
 
   /* ---------------- génération : défi quotidien & graines ---------------- */
-  function seededLevel(seedStr) {
+  function seededLevel(seedStr, opts = {}) {
+    const hard = !!opts.hard;
     const rng = U.mulberry32(U.hashSeed(seedStr));
     const size = { w: 1040, h: 640 };
     const walls = [];
-    const cols = 4 + Math.floor(rng() * 2);
+    const cols = (hard ? 5 : 4) + Math.floor(rng() * 2);
     for (let i = 0; i < cols; i++) {
       const vertical = rng() > 0.5;
       walls.push({
@@ -42,22 +43,22 @@ LC.game = (function () {
     }
     const types = ['guetteur', 'distrait', 'mefiant'];
     const enemies = [];
-    const n = 3;
+    const n = hard ? 4 : 3;
     for (let i = 0; i < n; i++) {
       const t = types[i % 3];
       enemies.push({
         type: t, x: 240 + rng() * (size.w - 480), y: 160 + rng() * (size.h - 320),
         angle: rng() * U.TAU,
-        vision: { range: 260 + rng() * 120, angle: 0.7 + rng() * 0.6 },
-        sweep: { base: rng() * U.TAU, amp: 0.8 + rng() * 1.6, speed: 0.4 + rng() * 0.5 },
+        vision: { range: (hard ? 300 : 260) + rng() * (hard ? 160 : 120), angle: 0.7 + rng() * (hard ? 0.9 : 0.6) },
+        sweep: { base: rng() * U.TAU, amp: 0.8 + rng() * 1.6, speed: (hard ? 0.6 : 0.4) + rng() * 0.5 },
       });
     }
     const fragments = [];
     for (let i = 0; i < 3; i++) fragments.push({ x: 140 + rng() * (size.w - 280), y: 120 + rng() * (size.h - 240) });
     return {
-      id: 'seed-' + seedStr, world: 0, index: 0, name: 'Graine ' + seedStr,
+      id: (hard ? 'weekly-' : 'seed-') + seedStr, world: 0, index: 0, name: 'Graine ' + seedStr,
       size, start: { x: 60, y: size.h - 70 }, exit: { x: size.w - 80, y: 50, w: 44, h: 80 },
-      targetTime: 55, hearts: 3, walls, fragments, enemies,
+      targetTime: hard ? 42 : 55, hearts: 3, walls, fragments, enemies,
       objectives: [{ id: 'frag', label: 'Récupérer les 3 fragments', type: 'allFragments' }],
       tutorials: [], seed: seedStr,
     };
@@ -66,9 +67,16 @@ LC.game = (function () {
     const d = new Date();
     return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
   }
+  function weeklySeed() {
+    const d = new Date();
+    const jan1 = new Date(d.getFullYear(), 0, 1);
+    const week = Math.ceil((((d - jan1) / 86400000) + jan1.getDay() + 1) / 7);
+    return `${d.getFullYear()}-S${String(week).padStart(2, '0')}`;
+  }
 
   function resolveLevel(param) {
     if (param === 'daily') { const lv = seededLevel(dailySeed()); lv.name = 'Défi du jour'; lv.mode = 'daily'; return lv; }
+    if (param === 'weekly') { const lv = seededLevel(weeklySeed(), { hard: true }); lv.name = 'Défi de la semaine'; lv.mode = 'weekly'; return lv; }
     if (param && param.indexOf('seed-') === 0) { const lv = seededLevel(param.slice(5)); lv.mode = 'seed'; return lv; }
     const lv = LC.levels.getLevel(param);
     if (lv) lv.mode = 'campaign';
@@ -87,6 +95,8 @@ LC.game = (function () {
     const keybinds = LC.save.getKeybinds(user.email);
     const skinColor = LC.save.skinColor(user.email);
     const ghost = LC.save.getGhost(user.email, level.id);
+    const priorRec = LC.save.getLevelRecord(user.email, level.id);
+    const priorBest = priorRec ? priorRec.bestTime : null;
     const hideCones = level.hideCones || settings.hideCones;
 
     const el = document.createElement('div');
@@ -99,12 +109,14 @@ LC.game = (function () {
           <div class="gauge danger"><span id="dangerFill"></span></div>
         </div>
         <span class="hud-frag" id="hudFrag">◆ 0/0</span>
+        <span class="hud-mode" id="hudMode" hidden></span>
         <span class="hud-time" id="hudTime">00:00.0</span>
         <button class="hud-btn" id="pauseBtn" aria-label="Pause">⏸</button>
       </div>
       <div class="game-wrap" id="wrap">
         <canvas id="gameCanvas"></canvas>
         <div class="tuto-banner" id="tuto" hidden></div>
+        <div class="rotate-hint" id="rotateHint" hidden>↻ Tournez l'appareil en paysage pour une plus grande zone de jeu.<button class="rotate-close" id="rotateClose" aria-label="Fermer">×</button></div>
       </div>
       <div class="touch-controls">
         <div class="joystick" id="joystick"><div class="thumb" id="joyThumb"></div></div>
@@ -117,6 +129,7 @@ LC.game = (function () {
     const hudHearts = el.querySelector('#hudHearts');
     const hudTime = el.querySelector('#hudTime');
     const hudFrag = el.querySelector('#hudFrag');
+    const hudMode = el.querySelector('#hudMode');
     const staminaFill = el.querySelector('#staminaFill');
     const dangerFill = el.querySelector('#dangerFill');
     const overlay = el.querySelector('#overlay');
@@ -162,7 +175,7 @@ LC.game = (function () {
       activeNoise: null, pingCooldown: 0, respawn: { ...level.start }, checkpointsUsed: 0,
       keys: Object.create(null), joy: null, sprintTouch: false,
       ghostRec: [], ghostAcc: 0, tutoShown: Object.create(null),
-      hearts: level.hearts || 3, bossPhase: 0,
+      hearts: level.hearts || 3, bossPhase: 0, gameMode: 'normal',
     };
 
     /* ============ entrées ============ */
@@ -231,6 +244,15 @@ LC.game = (function () {
     }
     const ro = new ResizeObserver(resize);
     ro.observe(el.querySelector('#wrap'));
+
+    /* aide : suggérer le paysage sur mobile en portrait (non bloquant) */
+    const rotateHint = el.querySelector('#rotateHint');
+    const portraitMQ = window.matchMedia('(orientation: portrait) and (pointer: coarse)');
+    let rotateDismissed = false;
+    function updateRotate() { rotateHint.hidden = rotateDismissed || !portraitMQ.matches; }
+    el.querySelector('#rotateClose').addEventListener('click', () => { rotateDismissed = true; updateRotate(); });
+    if (portraitMQ.addEventListener) portraitMQ.addEventListener('change', updateRotate);
+    updateRotate();
 
     /* ============ helpers monde ============ */
     function activeBlockers() {
@@ -335,14 +357,16 @@ LC.game = (function () {
 
     function onDetected(e) {
       state.detections++;
-      state.hearts--;
-      state.heartsLost++;
       LC.player.hit(player, INVINCIBLE);
       LC.enemy.setReaction(e, 'angry', 1.2);
       if (!settings.disableShake) cam.shake = 14;
       state.timeScale = 0.35;             // court ralenti
       setTimeout(() => { state.timeScale = 1; }, 220);
       burst(player.x, player.y, '#e05b6b', 22);
+      /* mode Sans détection : la moindre détection met fin à la partie */
+      if (state.gameMode === 'nodetect') { failMode('Repérée — le mode Sans détection ne pardonne pas.'); return; }
+      state.hearts--;
+      state.heartsLost++;
       renderHud();
       if (state.hearts <= 0) {
         if (state.checkpointsUsed < checkpoints.length) {
@@ -622,6 +646,15 @@ LC.game = (function () {
       staminaFill.style.opacity = player.canSprint ? 1 : 0.4;
       dangerFill.style.width = (state.danger * 100) + '%';
     }
+    const MODE_LABEL = { nodetect: '⦸ Sans détection', speedrun: '⏱ Speedrun' };
+    function updateModeBadge() {
+      if (state.gameMode === 'normal') { hudMode.hidden = true; return; }
+      hudMode.hidden = false;
+      let txt = MODE_LABEL[state.gameMode] || '';
+      if (state.gameMode === 'speedrun' && priorBest != null) txt += ` · PB ${fmt(priorBest)}`;
+      hudMode.textContent = txt;
+    }
+    function backDest() { return level.mode === 'campaign' ? '/world/' + level.world : '/challenges'; }
 
     /* ============ écrans (objectifs / pause / résultats) ============ */
     function showOverlay(html) { overlayCard.innerHTML = html; overlay.classList.add('shown'); }
@@ -630,19 +663,22 @@ LC.game = (function () {
     function showObjectives() {
       state.phase = 'objectives';
       const objs = (level.objectives || []).map(o => `<li>${o.label}</li>`).join('');
-      const modeTag = level.mode === 'seed' ? '<span class="tag">Graine</span>' : '';
+      const modeTag = level.mode === 'seed' ? '<span class="tag">Graine</span>' : level.mode === 'weekly' ? '<span class="tag">Semaine</span>' : '';
+      const chip = (m, label) => `<button class="mode-chip ${state.gameMode === m ? 'active' : ''}" data-mode="${m}">${label}</button>`;
       showOverlay(`
         <h2>${level.name} ${modeTag}</h2>
-        <p class="ov-sub">Temps cible : ${fmt(level.targetTime)}${totalFrags ? ` · ${totalFrags} fragment${totalFrags > 1 ? 's' : ''}` : ''}</p>
+        <p class="ov-sub">Temps cible : ${fmt(level.targetTime)}${totalFrags ? ` · ${totalFrags} fragment${totalFrags > 1 ? 's' : ''}` : ''}${priorBest != null ? ` · PB ${fmt(priorBest)}` : ''}</p>
         <ul class="ov-obj">
           <li>★ Terminer le niveau</li>
           <li>★★ Sans perdre de cœur</li>
           <li>★★★ Battre le temps cible ${totalFrags ? '+ tous les fragments' : ''}</li>
           ${objs}
         </ul>
+        <p class="ov-mode-label">Mode</p>
+        <div class="mode-pick">${chip('normal', 'Normal')}${chip('nodetect', 'Sans détection')}${chip('speedrun', 'Speedrun')}</div>
         <div class="overlay-actions">
           <button class="btn" data-act="start">Commencer</button>
-          <button class="btn-ghost" data-go="/world/${level.world || 1}">Retour</button>
+          <button class="btn-ghost" data-go="${backDest()}">Retour</button>
         </div>`);
     }
 
@@ -714,18 +750,26 @@ LC.game = (function () {
       const starsHtml = [1, 2, 3].map(n => `<span class="${n <= stars ? '' : 'off'}">★</span>`).join('');
       const objs = objectivesResult(time);
       const objHtml = (level.objectives || []).map(o => `<li class="${objs[o.id] ? 'ok' : 'ko'}">${objs[o.id] ? '✓' : '✗'} ${o.label}</li>`).join('');
-      const nextId = LC.levels.nextLevelId(level.id);
+      const isChallenge = level.mode === 'daily' || level.mode === 'weekly';
+      const nextId = level.mode === 'campaign' ? LC.levels.nextLevelId(level.id) : null;
       const rank = ['—', 'Bronze', 'Argent', 'Or'][stars];
+      const modeName = state.gameMode === 'nodetect' ? ' · Sans détection' : state.gameMode === 'speedrun' ? ' · Speedrun' : '';
       const quip = QUIPS[Math.floor(Math.random() * QUIPS.length)];
-      const shareTxt = `Les Curieux — ${level.name}\n${'★'.repeat(stars)}${'☆'.repeat(3 - stars)} · ${fmt(time)} · ${state.detections} détection(s)\nGraine : ${seed}\n${quip}`;
+      const deltaHtml = (state.gameMode === 'speedrun' && priorBest != null)
+        ? `<span>Écart PB</span><b class="${time <= priorBest ? 'ok' : 'ko'}">${time <= priorBest ? '−' : '+'}${fmt(Math.abs(Math.round((time - priorBest) * 10) / 10))}</b>` : '';
+      const shareTxt = `Les Curieux — ${level.name}${modeName}\n${'★'.repeat(stars)}${'☆'.repeat(3 - stars)} · ${fmt(time)} · ${state.detections} détection(s)\nGraine : ${seed}\n${quip}`;
+      const primaryBtn = nextId
+        ? `<button class="btn" data-go="/game/${nextId}">Niveau suivant</button>`
+        : `<button class="btn" data-go="${backDest()}">${level.mode === 'campaign' ? 'Carte des niveaux' : 'Retour aux défis'}</button>`;
       showOverlay(`
-        <h2>${state.mode === 'daily' ? 'Défi relevé !' : 'Sortie atteinte !'}</h2>
+        <h2>${isChallenge ? 'Défi relevé !' : 'Sortie atteinte !'}</h2>
         <div class="ov-stars">${starsHtml}</div>
         <div class="share-card">
-          <div class="share-head"><strong>${level.name}</strong><span>${rank}</span></div>
+          <div class="share-head"><strong>${level.name}${modeName}</strong><span>${rank}</span></div>
           <div class="share-grid">
             <span>Temps</span><b>${fmt(time)}</b>
             <span>Meilleur</span><b>${fmt(best != null ? best : time)}</b>
+            ${deltaHtml}
             <span>Détections</span><b>${state.detections}</b>
             <span>Fragments</span><b>${state.collected}/${totalFrags}</b>
             <span>Graine</span><b>${seed}</b>
@@ -734,7 +778,7 @@ LC.game = (function () {
         </div>
         <ul class="ov-obj result">${objHtml}</ul>
         <div class="overlay-actions">
-          ${nextId ? `<button class="btn" data-go="/game/${nextId}">Niveau suivant</button>` : `<button class="btn" data-go="/world/${level.world || 1}">Carte des niveaux</button>`}
+          ${primaryBtn}
           <div class="row-2">
             <button class="btn-ghost" data-act="retry">Rejouer</button>
             <button class="btn-ghost" data-act="share" data-share="${encodeURIComponent(shareTxt)}">Partager</button>
@@ -743,14 +787,15 @@ LC.game = (function () {
         </div>`);
     }
 
-    function fail() {
+    function fail() { failMode("Un regard de trop. L'étoile file se rhabiller."); }
+    function failMode(msg) {
       state.phase = 'done';
       showOverlay(`
         <h2>Repérée…</h2>
-        <p class="ov-sub">Un regard de trop. L'étoile file se rhabiller.</p>
+        <p class="ov-sub">${msg}</p>
         <div class="overlay-actions">
           <button class="btn" data-act="retry">Réessayer</button>
-          <button class="btn-ghost" data-go="/world/${level.world || 1}">Niveaux</button>
+          <button class="btn-ghost" data-go="${backDest()}">${level.mode === 'campaign' ? 'Niveaux' : 'Défis'}</button>
           <button class="btn-link" data-go="/menu">Menu principal</button>
         </div>`);
     }
@@ -759,12 +804,18 @@ LC.game = (function () {
     overlay.addEventListener('click', async (e) => {
       const go = e.target.closest('[data-go]');
       if (go) { LC.router.go(go.dataset.go); return; }
+      const mode = e.target.closest('[data-mode]');
+      if (mode) {
+        state.gameMode = mode.dataset.mode;
+        overlayCard.querySelectorAll('.mode-chip').forEach(c => c.classList.toggle('active', c === mode));
+        return;
+      }
       const act = e.target.closest('[data-act]');
       if (!act) return;
       const a = act.dataset.act;
-      if (a === 'start') { state.phase = 'play'; hideOverlay(); lastTime = performance.now(); }
+      if (a === 'start') { state.phase = 'play'; hideOverlay(); updateModeBadge(); lastTime = performance.now(); }
       else if (a === 'resume') togglePause();
-      else if (a === 'retry') LC.router.go('/game/' + level.id);
+      else if (a === 'retry') LC.router.go('/game/' + param);
       else if (a === 'share') {
         const txt = decodeURIComponent(act.dataset.share);
         try { await navigator.clipboard.writeText(txt); act.textContent = 'Copié !'; }

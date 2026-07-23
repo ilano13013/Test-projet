@@ -663,3 +663,81 @@ fieldset:disabled { opacity: .75; }
   width: 108px; height: 108px;
   flex: none;
 }
+
+/* ============================================================
+   v3 — modes de jeu, défis, records, aide rotation
+   ============================================================ */
+
+/* badge de mode dans le HUD */
+.hud-mode { color: #ffd68c; font-weight: 600; font-size: .8rem; white-space: nowrap; }
+.hud-mode[hidden] { display: none; }
+
+/* sélecteur de mode sur l'écran d'objectifs */
+.ov-mode-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; text-align: left; }
+.mode-pick { display: flex; gap: 6px; margin-bottom: 16px; }
+.mode-chip {
+  flex: 1; padding: 9px 6px; border: 2px solid #e4e6f0; border-radius: 10px;
+  background: #fafbff; font: inherit; font-size: .78rem; font-weight: 600;
+  color: var(--ink); cursor: pointer; transition: border-color .2s ease, background .2s ease;
+}
+.mode-chip:hover { border-color: var(--accent); }
+.mode-chip.active { border-color: var(--accent); background: #eceeff; color: var(--accent-dark); }
+
+/* delta PB dans la carte de résultat */
+.share-grid b.ok { color: #6ee7a8; }
+.share-grid b.ko { color: #ff9aa8; }
+
+/* menu 2x2 */
+.menu-grid.four { grid-template-columns: 1fr 1fr; }
+
+/* écran des défis */
+.challenge-list { display: flex; flex-direction: column; gap: 10px; }
+.challenge-card {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  padding: 16px; border: 2px solid #e4e6f0; border-radius: 14px;
+  background: #fafbff; cursor: pointer; text-align: left; font: inherit; color: var(--ink);
+  transition: border-color .2s ease, transform .15s ease;
+}
+.challenge-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.ch-ico { font-size: 1.5rem; color: var(--gold); flex: none; width: 28px; text-align: center; }
+.ch-info { flex: 1; }
+.ch-name { display: block; font-weight: 700; }
+.ch-sub { display: block; font-size: .76rem; color: var(--muted); margin-top: 2px; }
+
+.seed-row { display: flex; gap: 8px; }
+.seed-row input {
+  flex: 1; padding: 12px 14px; font: inherit; font-size: .9rem; letter-spacing: .05em;
+  border: 2px solid #e4e6f0; border-radius: 12px; background: #fafbff; color: var(--ink); outline: none;
+  text-transform: uppercase;
+}
+.seed-row input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(91,108,255,.15); }
+.seed-row .btn-mini { padding: 0 18px; }
+.seed-hint { font-size: .74rem; color: var(--muted); margin-top: 8px; }
+
+/* écran des records */
+.rec-head, .rec-row {
+  display: grid; grid-template-columns: 1fr auto 60px 40px; gap: 10px; align-items: center;
+}
+.rec-head { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 0 10px 8px; }
+.rec-head span:not(:first-child), .rec-row span:not(.rec-name) { text-align: right; }
+.rec-list { display: flex; flex-direction: column; gap: 4px; }
+.rec-row { padding: 9px 10px; background: #fafbff; border-radius: 10px; font-size: .8rem; }
+.rec-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rec-stars { color: var(--gold); letter-spacing: 1px; }
+.rec-stars .off { color: #dfe1ee; }
+.rec-time { font-variant-numeric: tabular-nums; color: var(--ink); }
+.rec-det { font-variant-numeric: tabular-nums; color: var(--muted); }
+
+/* aide rotation (mobile portrait) */
+.rotate-hint {
+  position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
+  z-index: 7; max-width: 90%;
+  background: rgba(12,17,34,.9); color: #eef1ff; border: 1px solid rgba(255,255,255,.16);
+  padding: 8px 34px 8px 14px; border-radius: 12px; font-size: .78rem; text-align: center;
+  backdrop-filter: blur(4px);
+}
+.rotate-hint[hidden] { display: none; }
+.rotate-close {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  border: none; background: none; color: #eef1ff; font-size: 1.1rem; cursor: pointer; padding: 4px 8px; line-height: 1;
+}

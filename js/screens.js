@@ -172,9 +172,10 @@ LC.screens = (function () {
       <p class="subtitle">Traversez la nuit sans vous faire remarquer.</p>
       <div class="menu-actions">
         <button class="btn" data-go="/game/${next}">${progress ? 'Continuer' : 'Jouer'}</button>
-        <button class="btn-ghost" data-go="/game/daily">Défi du jour ✦</button>
-        <div class="menu-grid">
+        <button class="btn-ghost" data-go="/challenges">Défis ✦</button>
+        <div class="menu-grid four">
           <button class="btn-ghost" data-go="/worlds">Mondes</button>
+          <button class="btn-ghost" data-go="/records">Records</button>
           <button class="btn-ghost" data-go="/profile">Profil</button>
           <button class="btn-ghost" data-go="/settings">Réglages</button>
         </div>
@@ -214,6 +215,66 @@ LC.screens = (function () {
         <div class="worlds-list">${cards}</div>
       </div></div>`);
     el.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g && g.dataset.go) LC.router.go(g.dataset.go); });
+    return { el };
+  }
+
+  /* ============================ DÉFIS ============================ */
+  function challengesScreen() {
+    const el = make('screen', `
+      <div class="scene wide"><div class="card">
+        <div class="back-row"><button class="btn-link" data-go="/menu">← Menu</button></div>
+        <h1>Défis</h1>
+        <p class="subtitle">Des runs courts et rejouables. Le mode (normal / sans détection / speedrun) se choisit juste avant de lancer.</p>
+        <div class="challenge-list">
+          <button class="challenge-card" data-go="/game/daily">
+            <span class="ch-ico">✦</span>
+            <span class="ch-info"><span class="ch-name">Défi du jour</span><span class="ch-sub">Une graine unique, la même pour tout le monde aujourd'hui</span></span>
+          </button>
+          <button class="challenge-card" data-go="/game/weekly">
+            <span class="ch-ico">☆</span>
+            <span class="ch-info"><span class="ch-name">Défi de la semaine</span><span class="ch-sub">Plus corsé — nouvelle graine chaque semaine</span></span>
+          </button>
+        </div>
+        <p class="subtitle" style="margin:18px 0 8px">Graine personnalisée</p>
+        <div class="seed-row">
+          <input type="text" id="seedInput" placeholder="ex : NEBULEUSE" maxlength="24" spellcheck="false">
+          <button class="btn-mini" id="seedGo">Jouer</button>
+        </div>
+        <p class="seed-hint">Deux joueurs avec la même graine parcourent exactement le même niveau.</p>
+        <div style="margin-top:18px"><button class="btn-ghost" data-go="/records">Voir mes records</button></div>
+      </div></div>`);
+    el.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) LC.router.go(g.dataset.go); });
+    const input = el.querySelector('#seedInput');
+    const launch = () => { const s = input.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, ''); if (s) LC.router.go('/game/seed-' + s); };
+    el.querySelector('#seedGo').addEventListener('click', launch);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') launch(); });
+    return { el };
+  }
+
+  /* ============================ RECORDS ============================ */
+  function recordsScreen() {
+    const u = LC.auth.current();
+    const rows = [];
+    for (const w of LC.levels.WORLDS) for (const lv of w.levels) {
+      const r = LC.save.getLevelRecord(u.email, lv.id);
+      rows.push(`<div class="rec-row">
+        <span class="rec-name">${lv.id} ${lv.isBoss ? '☠' : ''} ${escapeHtml(lv.name)}</span>
+        <span class="rec-stars">${starRow(r ? r.stars : 0)}</span>
+        <span class="rec-time">${r && r.bestTime != null ? formatTime(r.bestTime) : '—'}</span>
+        <span class="rec-det">${r && r.minDetections != null ? r.minDetections : '—'}</span>
+      </div>`);
+    }
+    const el = make('screen', `
+      <div class="scene wide"><div class="card">
+        <div class="back-row"><button class="btn-link" data-go="/menu">← Menu</button></div>
+        <h1>Records</h1>
+        <p class="subtitle">Vos meilleurs temps et détections minimales, enregistrés sur ce compte.</p>
+        <div class="rec-head"><span>Niveau</span><span>★</span><span>Temps</span><span>Vus</span></div>
+        <div class="rec-list">${rows.join('')}</div>
+        <div class="stat-row" style="margin-top:12px"><span class="k">Total d'étoiles</span><span class="v">${LC.save.totalStars(u.email)}</span></div>
+        <p class="seed-hint" style="margin-top:10px">Classement en ligne à venir : pour l'instant, tout est local (aucun serveur).</p>
+      </div></div>`);
+    el.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) LC.router.go(g.dataset.go); });
     return { el };
   }
 
@@ -336,5 +397,5 @@ LC.screens = (function () {
     return { el };
   }
 
-  return { loginScreen, registerScreen, forgotScreen, menuScreen, worldsScreen, worldScreen, profileScreen, settingsScreen, formatTime };
+  return { loginScreen, registerScreen, forgotScreen, menuScreen, worldsScreen, worldScreen, challengesScreen, recordsScreen, profileScreen, settingsScreen, formatTime };
 })();

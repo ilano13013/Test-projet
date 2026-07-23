@@ -80,17 +80,30 @@ L'écran de fin affiche temps, meilleur temps, détections, fragments, étoiles,
 objectifs réussis, et une **carte de résultat partageable** (nom, rang, graine,
 phrase humoristique) copiable en un clic. Boutons Rejouer / Suivant / Carte.
 
-## Rejouabilité
+## Modes de jeu
+
+Choisis sur l'écran d'objectifs, avant chaque niveau (campagne comme défis) :
+
+- **Normal** ;
+- **Sans détection** — le moindre repérage met fin à la partie ;
+- **Speedrun** — met en avant le chrono et l'écart avec votre record (PB),
+  affiché en direct dans le HUD et en fin de niveau.
+
+## Défis & rejouabilité
 
 - **Défi du jour** généré depuis la date (graine du jour) ;
-- **graines** affichables et copiables (niveaux reproductibles) ;
+- **Défi de la semaine**, plus corsé (graine hebdomadaire, ennemis renforcés) ;
+- **graines personnalisées** saisissables et copiables (niveaux reproductibles :
+  même graine = même niveau) ;
 - **fantôme personnel** : votre meilleur trajet est enregistré et rejoué en
   transparence ;
-- architecture prête pour classement, mode sans détection et speedrun.
+- écran **Records** (meilleurs temps + détections minimales par niveau) ;
+- classement en ligne encore à venir (nécessite un backend) — tout est local.
 
 ## Accessibilité & performances
 
-- Clavier, souris et tactile ; **remappage des touches** dans les réglages ;
+- Clavier, souris et tactile (joystick + Sprint sous le canvas) ; sur mobile
+  portrait, une aide invite à passer en paysage ; **remappage des touches** ;
 - options : réduire les animations, désactiver les secousses de caméra,
   masquer les champs de vision (mode expert) ;
 - indices non uniquement chromatiques (symboles, formes, marqueurs) ;

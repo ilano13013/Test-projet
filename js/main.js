@@ -16,6 +16,8 @@
   R.register('menu', LC.screens.menuScreen, { auth: true });
   R.register('worlds', LC.screens.worldsScreen, { auth: true });
   R.register('world', LC.screens.worldScreen, { auth: true });
+  R.register('challenges', LC.screens.challengesScreen, { auth: true });
+  R.register('records', LC.screens.recordsScreen, { auth: true });
   R.register('game', LC.game.createGameScreen, { auth: true });
   R.register('profile', LC.screens.profileScreen, { auth: true });
   R.register('settings', LC.screens.settingsScreen, { auth: true });
