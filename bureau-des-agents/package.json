@@ -1,0 +1,13 @@
+{
+  "name": "mon-bureau-des-agents",
+  "version": "1.0.0",
+  "description": "Un bureau en pixel art où une équipe d'agents Claude Code travaille sous tes yeux.",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node server/index.js",
+    "demo": "node server/index.js --demo"
+  },
+  "license": "MIT"
+}

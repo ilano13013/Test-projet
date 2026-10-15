@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Le Bureau des agents</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="entete">
+    <h1><span class="logo">🏢</span> Le Bureau des agents</h1>
+    <p class="accroche">Tu dis ce que tu veux. Une équipe d'agents IA se met au travail sous tes yeux.</p>
+    <div class="actions-entete">
+      <span id="pastille" class="pastille">● hors ligne</span>
+      <button id="btn-son" class="icone" title="Son">🔊</button>
+    </div>
+  </header>
+
+  <main class="disposition">
+    <section class="scene-zone">
+      <div class="scene" id="scene">
+        <canvas id="canvas" width="352" height="256"></canvas>
+        <div class="calque" id="calque"></div>
+      </div>
+
+      <div class="dialogue" id="dialogue">
+        <canvas id="portrait" width="20" height="26"></canvas>
+        <div>
+          <div class="dialogue-nom">Max · Chef de projet</div>
+          <p id="dialogue-texte">Salut ! Je suis Max. Dis-moi ce que tu veux, et j'appelle les bons spécialistes.</p>
+        </div>
+      </div>
+
+      <form class="demande" id="form">
+        <textarea id="demande" rows="2" placeholder="Ex. : Crée une page web pour ma boulangerie, avec une palette chaude et des textes accueillants."></textarea>
+        <div class="boutons">
+          <label class="demo"><input type="checkbox" id="demo"> Démo</label>
+          <button type="button" id="btn-stop" class="secondaire" hidden>■ Arrêter</button>
+          <button type="submit" id="btn-go">Envoyer à Max ▶</button>
+        </div>
+      </form>
+    </section>
+
+    <aside class="panneau">
+      <nav class="onglets">
+        <button data-onglet="mission" class="actif">📋 Mission</button>
+        <button data-onglet="equipe">👥 Équipe</button>
+        <button data-onglet="journal">📜 Journal</button>
+      </nav>
+      <div class="onglet" id="onglet-mission">
+        <div id="mission-vide" class="vide">Aucune mission pour l'instant.<br>Écris ta demande à Max en dessous du bureau.</div>
+        <div id="mission-infos" hidden>
+          <h3 id="mission-titre"></h3>
+          <ul id="liste-taches" class="taches"></ul>
+          <div id="bilan" hidden>
+            <h4>Bilan de Max</h4>
+            <div id="bilan-texte" class="bilan-texte"></div>
+            <h4 id="titre-fichiers" hidden>Fichiers produits</h4>
+            <ul id="fichiers" class="fichiers"></ul>
+            <p id="cout" class="discret"></p>
+          </div>
+        </div>
+      </div>
+      <div class="onglet" id="onglet-equipe" hidden>
+        <ul id="equipe" class="equipe"></ul>
+        <p class="discret">Modifie <code>equipe.json</code> pour changer les noms, les métiers, les couleurs ou les outils, puis recharge la page.</p>
+      </div>
+      <div class="onglet" id="onglet-journal" hidden>
+        <ol id="journal" class="journal"></ol>
+      </div>
+    </aside>
+  </main>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
