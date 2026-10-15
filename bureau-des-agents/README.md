@@ -28,7 +28,21 @@ les couleurs, les consignes (`prompt`) ou les outils de chacun, ou ajouter un
 spécialiste (8 bureaux disponibles). Tu peux aussi fixer un modèle par agent
 avec `"modele": "haiku"` par exemple. Recharge la page et c'est pris en compte.
 
-## Lancer
+## Deux façons de l'ouvrir
+
+| | Version web (`web/bureau.html`) | Version Claude Code (`npm start`) |
+|---|---|---|
+| Installation | **Aucune** : un lien claude.ai | Node.js 20+ et Claude Code |
+| Qui travaille | Claude, avec ton compte claude.ai | De vrais agents Claude Code |
+| Fichiers produits | Dans la page : aperçu + téléchargement `.zip` | Sur ton disque, dans `~/Documents/…` |
+| Recherche web | Non (connaissances de Claude) | Oui (`WebSearch`, `WebFetch`) |
+| Équipe | Modifiable dans l'onglet 👥 | Modifiable dans `equipe.json` |
+
+La version web est un seul fichier autonome, publié comme page claude.ai.
+Ouvert directement depuis le disque (double-clic), il ne peut pas joindre Claude
+et passe en mode démo.
+
+## Lancer la version Claude Code
 
 Il faut **Node.js 20+** et **Claude Code** installé et connecté (`claude` dans un terminal).
 

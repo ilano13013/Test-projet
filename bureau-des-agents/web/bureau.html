@@ -1,0 +1,1253 @@
+<title>Le Bureau des agents</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap">
+<style>
+/* Mise en page : la scène pixel art domine à gauche, le panneau de mission à droite (empilés sur mobile).
+   Monde unique assumé : un bureau de nuit, couleurs fixées en sombre. */
+:root {
+  color-scheme: dark;
+  --fond: #171a2c;
+  --carte: #22263f;
+  --carte-2: #2b3050;
+  --bord: #3a4068;
+  --texte: #eef0fa;
+  --doux: #a3a9c9;
+  --accent: #f2a33a;
+  --accent-ombre: #a86a1c;
+  --encre: #1d2036;
+  --papier: #fffdf6;
+  --papier-max: #fff3dc;
+  --lien: #8ec9ff;
+  --ok: #7bd36b;
+  --ko: #f06a5a;
+  --pixel: 'Pixelify Sans', ui-monospace, 'Courier New', monospace;
+  --sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--fond); color: var(--texte); }
+body {
+  font-family: var(--sans); min-height: 100%;
+  background-image: radial-gradient(circle at 20% 0%, #262b4a 0, transparent 50%);
+}
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.gouttiere {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.entete { display: flex; align-items: center; gap: 8px 16px; flex-wrap: wrap; padding-block: 14px; border-bottom: 2px solid var(--bord); }
+.entete h1 { font-family: var(--pixel); font-weight: 600; font-size: 24px; margin: 0; letter-spacing: .5px; text-wrap: balance; }
+.accroche { margin: 0; color: var(--doux); font-size: 14px; flex: 1; min-width: 200px; }
+.actions-entete { display: flex; gap: 10px; align-items: center; }
+.pastille { font-size: 13px; color: var(--doux); font-family: var(--pixel); }
+.pastille.ok { color: var(--ok); }
+.icone { background: var(--carte); border: 2px solid var(--bord); border-radius: 8px; padding: 4px 10px; }
+
+.disposition { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; padding-block: 20px; max-width: 1400px; margin: 0 auto; }
+@media (max-width: 960px) { .disposition { grid-template-columns: minmax(0, 1fr); } }
+.scene-zone { min-width: 0; width: 100%; max-width: max(320px, calc((100vh - 330px) * 1.375)); margin: 0 auto; }
+.scene {
+  position: relative; width: 100%; max-width: 100%; aspect-ratio: 352 / 256;
+  border: 4px solid #0e1020; border-radius: 6px; overflow: hidden;
+  box-shadow: 0 0 0 4px var(--bord), 0 16px 40px rgba(0,0,0,.45); background: #0e1020;
+}
+.scene canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+.calque { position: absolute; inset: 0; pointer-events: none; }
+.etiquette, .bulle { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; }
+.etiquette {
+  font-family: var(--pixel); font-size: clamp(9px, 1.1vw, 13px); color: #fff;
+  background: rgba(14,16,32,.75); padding: 0 5px; border-radius: 3px; margin-top: -2px;
+  border-bottom: 2px solid var(--c, #fff);
+}
+.bulle {
+  font-family: var(--pixel); font-size: clamp(10px, 1.2vw, 14px); line-height: 1.25;
+  background: var(--papier); color: var(--encre); padding: 4px 8px; border-radius: 4px;
+  border: 2px solid var(--encre); max-width: 19%; white-space: normal; width: max-content;
+  box-shadow: 2px 2px 0 rgba(0,0,0,.35); animation: pop .22s ease-out; margin-top: -18px;
+}
+.bulle::after { content: ''; position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); border: 6px solid transparent; border-top-color: var(--encre); }
+.bulle.max { background: var(--papier-max); }
+@keyframes pop { from { transform: translate(-50%, -90%) scale(.8); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .bulle { animation: none; } }
+
+.dialogue {
+  display: flex; gap: 14px; align-items: flex-start; margin-top: 14px;
+  background: #0e1020; border: 3px solid var(--papier-max); border-radius: 6px; padding: 12px 16px;
+  box-shadow: 0 0 0 3px #0e1020, 4px 6px 0 3px rgba(0,0,0,.35); min-height: 84px;
+}
+.dialogue > div { min-width: 0; }
+#portrait { width: 50px; height: 65px; image-rendering: pixelated; flex: none; }
+.dialogue-nom { font-family: var(--pixel); color: var(--accent); font-size: 14px; margin-bottom: 4px; }
+#dialogue-texte { margin: 0; font-family: var(--pixel); font-size: 17px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 9.8em; overflow-y: auto; }
+
+.demande { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.demande textarea {
+  width: 100%; resize: vertical; min-height: 64px; padding: 12px 14px; border-radius: 8px;
+  background: var(--carte); border: 2px solid var(--bord); font-size: 15px;
+}
+.demande textarea:focus { outline: none; border-color: var(--accent); }
+.boutons { display: flex; justify-content: flex-end; gap: 10px; align-items: center; flex-wrap: wrap; }
+.btn {
+  font-family: var(--pixel); font-size: 16px; padding: 8px 18px; border-radius: 6px; white-space: nowrap;
+  background: var(--accent); color: var(--encre); border: none; box-shadow: 0 4px 0 var(--accent-ombre);
+}
+.btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--accent-ombre); }
+.btn:disabled { opacity: .5; cursor: wait; }
+.btn.secondaire { background: var(--carte-2); color: var(--texte); box-shadow: 0 4px 0 #14172a; }
+.btn.petit { font-size: 13px; padding: 4px 10px; box-shadow: 0 2px 0 #14172a; }
+.mode { color: var(--doux); font-size: 13px; margin-right: auto; display: flex; gap: 6px; align-items: center; }
+.avis { margin: 0; font-size: 13px; color: var(--doux); background: var(--carte); border: 1px dashed var(--bord); border-radius: 8px; padding: 8px 12px; }
+
+.panneau {
+  min-width: 0; background: var(--carte); border: 2px solid var(--bord); border-radius: 10px;
+  display: flex; flex-direction: column; max-height: calc(100vh - 110px); min-height: 400px;
+  position: sticky; top: calc(20px + env(safe-area-inset-top, 0px));
+}
+@media (max-width: 960px) { .panneau { position: static; max-height: none; } }
+.onglets { display: flex; border-bottom: 2px solid var(--bord); }
+.onglets button {
+  flex: 1; background: none; border: none; color: var(--doux); padding: 12px 4px;
+  font-family: var(--pixel); font-size: 15px; border-bottom: 3px solid transparent; margin-bottom: -2px;
+}
+.onglets button.actif { color: var(--texte); border-bottom-color: var(--accent); }
+.onglets .compte { font-size: 12px; background: var(--accent); color: var(--encre); border-radius: 8px; padding: 0 5px; margin-left: 2px; }
+.onglet { padding: 16px; overflow-y: auto; flex: 1; min-width: 0; }
+.vide { color: var(--doux); text-align: center; padding: 32px 10px; line-height: 1.6; }
+.discret { color: var(--doux); font-size: 12px; line-height: 1.5; }
+h3 { margin: 0 0 12px; font-size: 16px; text-wrap: balance; overflow-wrap: anywhere; }
+h4 { margin: 18px 0 8px; font-family: var(--pixel); color: var(--accent); font-weight: 400; font-size: 15px; }
+.liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+
+.tache { background: var(--carte-2); border-radius: 8px; padding: 10px 12px; border-left: 4px solid var(--c); font-size: 13px; }
+.tache .haut { display: flex; justify-content: space-between; gap: 8px; font-weight: 700; }
+.tache .statut { font-family: var(--pixel); font-weight: 400; color: var(--doux); white-space: nowrap; }
+.tache.fini .statut { color: var(--ok); }
+.tache.echec .statut { color: var(--ko); }
+.tache .derniere { color: var(--doux); margin-top: 4px; overflow-wrap: anywhere; }
+.tache details { margin-top: 6px; color: var(--doux); }
+.tache details p { white-space: pre-wrap; margin: 6px 0 0; color: var(--texte); overflow-wrap: anywhere; }
+
+.fichier { display: flex; align-items: center; gap: 8px; background: var(--carte-2); border-radius: 8px; padding: 8px 10px; }
+.fichier .nom { flex: 1; min-width: 0; font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+.fichier .taille { color: var(--doux); font-size: 11px; font-variant-numeric: tabular-nums; }
+.bilan-texte { font-size: 14px; line-height: 1.55; white-space: pre-wrap; background: var(--carte-2); padding: 12px; border-radius: 8px; overflow-wrap: anywhere; }
+
+.membre { display: flex; gap: 12px; align-items: flex-start; background: var(--carte-2); border-radius: 8px; padding: 10px; }
+.membre canvas { width: 40px; height: 52px; image-rendering: pixelated; flex: none; }
+.membre .infos { flex: 1; min-width: 0; }
+.membre .nom { font-weight: 700; }
+.membre .metier { color: var(--doux); font-size: 13px; }
+.puces { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.puce { font-size: 11px; background: var(--encre); border-radius: 4px; padding: 1px 6px; color: var(--doux); font-family: var(--mono); }
+.edition { display: grid; gap: 8px; margin-top: 8px; }
+.edition label { display: grid; gap: 3px; font-size: 12px; color: var(--doux); }
+.edition input[type=text], .edition textarea { background: var(--encre); border: 1px solid var(--bord); border-radius: 6px; padding: 6px 8px; font-size: 13px; width: 100%; }
+.edition textarea { min-height: 70px; resize: vertical; }
+.edition .rangee { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.edition .cases { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12px; }
+.actions-equipe { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+.journal li { font-size: 12px; color: var(--doux); border-bottom: 1px dashed var(--bord); padding-bottom: 6px; overflow-wrap: anywhere; }
+.journal b { color: var(--texte); }
+.journal time { font-family: var(--mono); margin-right: 6px; opacity: .7; font-variant-numeric: tabular-nums; }
+
+.apercu {
+  position: fixed; inset: 0; z-index: 20; background: rgba(8,9,18,.8); display: flex; align-items: center; justify-content: center;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.apercu-boite { width: min(1100px, 100%); height: min(800px, 100%); background: var(--carte); border: 2px solid var(--bord); border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; }
+.apercu-haut { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 2px solid var(--bord); }
+.apercu-haut b { flex: 1; min-width: 0; font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+.apercu iframe { flex: 1; border: 0; background: #fff; width: 100%; }
+.apercu pre { flex: 1; margin: 0; padding: 14px; overflow: auto; font: 13px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>
+
+<header class="entete gouttiere">
+  <h1>🏢 Le Bureau des agents</h1>
+  <p class="accroche">Tu dis ce que tu veux. Une équipe d'agents IA se met au travail sous tes yeux.</p>
+  <div class="actions-entete">
+    <span id="pastille" class="pastille">● démarrage…</span>
+    <button id="btn-son" class="icone" type="button" aria-label="Couper le son">🔊</button>
+  </div>
+</header>
+
+<main class="disposition gouttiere">
+  <section class="scene-zone">
+    <div class="scene">
+      <canvas id="canvas" width="352" height="256" aria-label="Le bureau en pixel art"></canvas>
+      <div class="calque" id="calque"></div>
+    </div>
+    <div class="dialogue">
+      <canvas id="portrait" width="20" height="26"></canvas>
+      <div>
+        <div class="dialogue-nom" id="dialogue-nom">Max · Chef de projet</div>
+        <p id="dialogue-texte">Salut ! Je suis Max. Dis-moi ce que tu veux, et j'appelle les bons spécialistes.</p>
+      </div>
+    </div>
+    <form class="demande" id="form">
+      <textarea id="demande" rows="2" placeholder="Ex. : Crée une page web pour ma boulangerie, avec une palette chaude et des textes accueillants."></textarea>
+      <div class="boutons">
+        <label class="mode"><input type="checkbox" id="demo"> Démo (sans Claude)</label>
+        <button type="button" id="btn-stop" class="btn secondaire" hidden>■ Arrêter</button>
+        <button type="submit" id="btn-go" class="btn">Envoyer à Max ▶</button>
+      </div>
+      <p class="avis" id="avis" hidden></p>
+    </form>
+  </section>
+
+  <aside class="panneau">
+    <nav class="onglets">
+      <button type="button" data-onglet="mission" class="actif">📋 Mission</button>
+      <button type="button" data-onglet="fichiers">📁 Fichiers <span class="compte" id="nb-fichiers" hidden>0</span></button>
+      <button type="button" data-onglet="equipe">👥 Équipe</button>
+      <button type="button" data-onglet="journal">📜</button>
+    </nav>
+    <div class="onglet" id="onglet-mission">
+      <div id="mission-vide" class="vide">Aucune mission pour l'instant.<br>Écris ta demande à Max sous le bureau.</div>
+      <div id="mission-infos" hidden>
+        <h3 id="mission-titre"></h3>
+        <ul id="liste-taches" class="liste"></ul>
+        <div id="bilan" hidden>
+          <h4>Bilan de Max</h4>
+          <div id="bilan-texte" class="bilan-texte"></div>
+        </div>
+      </div>
+    </div>
+    <div class="onglet" id="onglet-fichiers" hidden>
+      <div id="fichiers-vide" class="vide">Les fichiers produits par l'équipe apparaîtront ici.<br>Tu pourras les voir et les télécharger.</div>
+      <ul id="fichiers" class="liste"></ul>
+      <div class="actions-equipe" id="actions-fichiers" hidden>
+        <button type="button" class="btn" id="btn-zip">⬇ Tout télécharger (.zip)</button>
+      </div>
+    </div>
+    <div class="onglet" id="onglet-equipe" hidden>
+      <ul id="equipe" class="liste"></ul>
+      <div class="actions-equipe">
+        <button type="button" class="btn petit secondaire" id="btn-ajout">＋ Recruter</button>
+        <button type="button" class="btn petit secondaire" id="btn-reset">Équipe d'origine</button>
+      </div>
+      <p class="discret">Clique sur « Modifier » pour changer le nom, le métier, la couleur, la consigne ou les outils d'un agent. Tes réglages restent dans ce navigateur.</p>
+    </div>
+    <div class="onglet" id="onglet-journal" hidden>
+      <ol id="journal" class="liste journal"></ol>
+    </div>
+  </aside>
+</main>
+
+<div class="apercu" id="apercu" hidden>
+  <div class="apercu-boite" role="dialog" aria-modal="true" aria-labelledby="apercu-nom">
+    <div class="apercu-haut">
+      <b id="apercu-nom"></b>
+      <button type="button" class="btn petit" id="apercu-dl">⬇ Télécharger</button>
+      <button type="button" class="btn petit secondaire" id="apercu-fermer">Fermer ✕</button>
+    </div>
+    <iframe id="apercu-cadre" sandbox="allow-scripts" title="Aperçu"></iframe>
+    <pre id="apercu-texte"></pre>
+  </div>
+</div>
+
+<script>
+// Moteur du bureau : tout le pixel art est dessiné en code (aucune image).
+const W = 352;
+const H = 256;
+
+const PORTE = { x: -14, y: 172 };
+const COULOIR_X = 40;
+const BUREAU_MAX = { x: 176, y: 70 };
+const COLONNES = [96, 160, 224, 288];
+const RANGEES = [{ bureauY: 124, allee: 100 }, { bureauY: 196, allee: 172 }];
+
+const POSTES = [];
+for (const r of RANGEES) for (const x of COLONNES) POSTES.push({ x, bureauY: r.bureauY, allee: r.allee, siegeY: r.bureauY + 2 });
+
+// ---------- utilitaires couleur ----------
+function rgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function teinte(hex, f) {
+  const [r, g, b] = rgb(hex).map((c) => Math.max(0, Math.min(255, Math.round(f > 0 ? c + (255 - c) * f : c * (1 + f)))));
+  return `rgb(${r},${g},${b})`;
+}
+
+function r(ctx, x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); }
+
+// ---------- décor statique ----------
+function dessinerDecor() {
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+
+  // Parquet
+  for (let y = 48; y < H; y += 8) {
+    const decal = ((y / 8) % 2) * 20;
+    for (let x = -decal; x < W; x += 40) {
+      const v = ((x * 7 + y * 13) % 3);
+      r(g, x, y, 40, 8, ['#a8744a', '#9e6c44', '#b07b4f'][v]);
+      r(g, x, y + 7, 40, 1, '#80542f');
+      r(g, x + 39, y, 1, 8, '#80542f');
+    }
+  }
+  // Mur du fond
+  r(g, 0, 0, W, 44, '#3d4266');
+  for (let x = 0; x < W; x += 16) r(g, x, 0, 1, 44, '#383d5e');
+  r(g, 0, 40, W, 4, '#2b2f4a');
+  r(g, 0, 44, W, 4, '#6b4a33');
+  // Fenêtres
+  for (const fx of [28, 260]) {
+    r(g, fx - 2, 6, 68, 30, '#262a44');
+    r(g, fx, 8, 64, 26, '#7cc6f0');
+    r(g, fx, 26, 64, 8, '#a6dcf7');
+    r(g, fx + 8, 13, 14, 4, '#ffffff'); r(g, fx + 12, 11, 8, 2, '#ffffff');
+    r(g, fx + 40, 18, 12, 3, '#eaf7ff');
+    r(g, fx + 31, 8, 2, 26, '#262a44'); r(g, fx, 20, 64, 2, '#262a44');
+    r(g, fx - 3, 35, 70, 3, '#c9cde0');
+  }
+  // Tableau blanc derrière Max
+  r(g, 138, 6, 76, 30, '#2b2f4a');
+  r(g, 140, 8, 72, 26, '#eef1f6');
+  r(g, 146, 13, 26, 2, '#4fb6e8'); r(g, 146, 18, 40, 2, '#e86fb0'); r(g, 146, 23, 20, 2, '#7bd36b');
+  r(g, 190, 12, 14, 14, '#f2a33a'); r(g, 192, 14, 10, 10, '#eef1f6');
+  r(g, 194, 18, 6, 2, '#f2a33a');
+  // Horloge
+  r(g, 236, 12, 12, 12, '#2b2f4a'); r(g, 237, 13, 10, 10, '#f6f1e3');
+  r(g, 241, 15, 1, 4, '#2b2f4a'); r(g, 241, 18, 3, 1, '#2b2f4a');
+  // Mur gauche + porte
+  r(g, 0, 48, 8, H - 48, '#33385a');
+  r(g, 8, 48, 2, H - 48, '#2b2f4a');
+  r(g, 0, 152, 10, 40, '#a8744a');
+  r(g, 0, 150, 10, 2, '#2b2f4a'); r(g, 0, 192, 10, 2, '#2b2f4a');
+  r(g, 10, 158, 16, 28, '#5e3d5f'); // paillasson
+  for (let y = 160; y < 184; y += 4) r(g, 12, y, 12, 1, '#7a5378');
+  // Panneau "Bureau"
+  r(g, 12, 128, 22, 12, '#f2a33a'); r(g, 13, 129, 20, 10, '#ffd9a0');
+  r(g, 16, 132, 14, 1, '#6b4a33'); r(g, 16, 135, 10, 1, '#6b4a33');
+  // Tapis de Max
+  r(g, 130, 52, 92, 42, '#4b3a6e');
+  r(g, 132, 54, 88, 38, '#5d4a85');
+  for (let x = 136; x < 216; x += 8) r(g, x, 56, 4, 1, '#7a68a6');
+  // Plantes
+  for (const [px, py] of [[338, 64], [20, 236], [338, 236], [118, 58]]) plante(g, px, py);
+  // Machine à café + fontaine
+  r(g, 318, 140, 22, 30, '#2b2f4a'); r(g, 320, 142, 18, 12, '#c9cde0');
+  r(g, 324, 145, 10, 5, '#3d4266'); r(g, 326, 158, 6, 6, '#ffffff'); r(g, 327, 159, 4, 3, '#6b4a33');
+  r(g, 318, 170, 22, 2, '#1d2036');
+  return c;
+}
+
+function plante(g, x, y) {
+  r(g, x - 6, y - 8, 12, 9, '#c4683f'); r(g, x - 7, y - 9, 14, 2, '#d97a4f');
+  r(g, x - 1, y - 20, 2, 12, '#3f8a4a');
+  for (const [dx, dy] of [[-7, -18], [3, -22], [-5, -26], [2, -14], [-9, -12], [5, -17]]) {
+    r(g, x + dx, y + dy, 6, 4, '#4caf5a'); r(g, x + dx + 1, y + dy, 3, 1, '#7bd36b');
+  }
+  r(g, x - 6, y + 1, 12, 2, 'rgba(0,0,0,.25)');
+}
+
+// ---------- mobilier dynamique ----------
+function bureau(ctx, x, y, allume, couleur, t, estMax) {
+  const w = estMax ? 44 : 34;
+  r(ctx, x - w / 2 + 2, y + 18, w - 4, 3, 'rgba(0,0,0,.25)');
+  r(ctx, x - w / 2, y, w, 16, estMax ? '#6b4a33' : '#8a5a36');
+  r(ctx, x - w / 2, y, w, 2, estMax ? '#8a6347' : '#a8744a');
+  r(ctx, x - w / 2, y + 14, w, 2, '#5a3a22');
+  r(ctx, x - w / 2 + 1, y + 16, 3, 3, '#5a3a22'); r(ctx, x + w / 2 - 4, y + 16, 3, 3, '#5a3a22');
+  // écran sur le côté du bureau, pour laisser voir le visage
+  const ex = x + w / 2 - 12;
+  r(ctx, ex, y - 7, 12, 9, '#23263b');
+  r(ctx, ex + 1, y - 6, 10, 7, allume ? couleur : '#30344f');
+  if (allume) {
+    const l = Math.floor(t / 180) % 4;
+    r(ctx, ex + 2, y - 5, 2 + l * 2, 1, 'rgba(255,255,255,.75)');
+    r(ctx, ex + 2, y - 3, 7 - l, 1, 'rgba(255,255,255,.5)');
+  }
+  r(ctx, ex + 4, y + 2, 4, 2, '#23263b');
+  // clavier, tasse
+  r(ctx, x - 7, y + 5, 11, 3, '#d8dbe6'); r(ctx, x - 7, y + 7, 11, 1, '#a3a8bd');
+  r(ctx, x - w / 2 + 4, y + 4, 4, 4, estMax ? '#f2a33a' : '#eef1f6');
+  if (estMax) { r(ctx, x - 16, y + 3, 7, 9, '#ffffff'); r(ctx, x - 15, y + 5, 5, 1, '#9aa4b1'); r(ctx, x - 15, y + 7, 4, 1, '#9aa4b1'); }
+}
+
+// ---------- robots ----------
+function dessinerRobot(ctx, x, y, couleur, o = {}) {
+  const t = o.t || 0;
+  const marche = o.marche;
+  const pas = marche ? Math.floor(t / 120) % 2 : 0;
+  const assis = o.assis;
+  const tape = assis && o.travaille ? Math.floor(t / 140) % 2 : 0;
+  const saut = o.saut ? -Math.max(0, Math.round(Math.sin(o.saut * Math.PI) * 3)) : 0;
+  const respire = !marche && !assis ? (Math.floor(t / 600) % 2) : 0;
+  y += saut;
+  const fonce = teinte(couleur, -0.35);
+  const clair = teinte(couleur, 0.35);
+
+  r(ctx, x - 6, y - 1 - saut, 12, 2, 'rgba(0,0,0,.28)');
+  // jambes
+  if (!assis) {
+    r(ctx, x - 4, y - 5 + (pas ? -1 : 0), 3, 5, '#3a3f5c');
+    r(ctx, x + 1, y - 5 + (pas ? 0 : -1), 3, 5, '#3a3f5c');
+  }
+  const by = y - 12 + respire;
+  // corps
+  r(ctx, x - 5, by, 10, 8, fonce);
+  r(ctx, x - 5, by, 10, 7, couleur);
+  r(ctx, x - 2, by + 2, 4, 3, '#23263b');
+  r(ctx, x - 1, by + 3, 2, 1, Math.floor(t / 500) % 2 ? '#8ef0ff' : '#4fb6e8');
+  if (o.cravate) { r(ctx, x - 1, by, 2, 6, '#d64545'); r(ctx, x - 2, by, 4, 1, '#ffffff'); }
+  // bras
+  const ba = marche ? (pas ? 1 : -1) : 0;
+  r(ctx, x - 7, by + 1 + ba - tape, 2, 5, fonce);
+  r(ctx, x + 5, by + 1 - ba - (tape ? 0 : 1) * (assis && o.travaille ? 1 : 0), 2, 5, fonce);
+  // tête
+  const hy = by - 10;
+  r(ctx, x - 6, hy + 1, 12, 8, fonce);
+  r(ctx, x - 6, hy, 12, 8, couleur);
+  r(ctx, x - 5, hy, 10, 1, clair);
+  // visière
+  r(ctx, x - 5, hy + 2, 10, 5, '#1d2036');
+  const cligne = (Math.floor(t / 100) + (o.graine || 0)) % 38 === 0;
+  if (!cligne) {
+    const yeux = o.dort ? '#3d4266' : '#8ef0ff';
+    const dx = marche ? (o.dir || 0) : 0;
+    r(ctx, x - 3 + dx, hy + 4, 2, o.dort ? 1 : 2, yeux);
+    r(ctx, x + 1 + dx, hy + 4, 2, o.dort ? 1 : 2, yeux);
+  }
+  // antenne
+  r(ctx, x, hy - 3, 1, 3, fonce);
+  r(ctx, x - 1, hy - 5, 3, 2, Math.floor(t / 400) % 2 && o.travaille ? '#ffffff' : clair);
+  if (o.casque) { r(ctx, x - 7, hy + 2, 2, 4, '#23263b'); r(ctx, x + 5, hy + 2, 2, 4, '#23263b'); r(ctx, x - 6, hy - 1, 12, 1, '#23263b'); }
+}
+
+// ---------- scène ----------
+class Bureau {
+  constructor(canvas) {
+    this.ctx = canvas.getContext('2d');
+    this.decor = dessinerDecor();
+    this.acteurs = new Map();
+    this.papiers = [];
+    this.max = { x: BUREAU_MAX.x, y: BUREAU_MAX.y + 2, couleur: '#f2a33a', travaille: false, saut: 0 };
+    this.t0 = performance.now();
+    this.dernier = this.t0;
+    this.ecouteurs = [];
+    requestAnimationFrame((t) => this.boucle(t));
+  }
+
+  surFrame(f) { this.ecouteurs.push(f); }
+
+  posteLibre(prefere) {
+    const pris = new Set([...this.acteurs.values()].map((a) => a.poste));
+    if (prefere != null && !pris.has(prefere)) return prefere;
+    for (let i = 0; i < POSTES.length; i++) if (!pris.has(i)) return i;
+    return prefere ?? 0;
+  }
+
+  arrivee(id, membre, indexMembre) {
+    if (this.acteurs.has(id)) return;
+    const poste = this.posteLibre(indexMembre % POSTES.length);
+    const p = POSTES[poste];
+    const a = {
+      id, membre, poste, couleur: membre.couleur,
+      x: PORTE.x, y: PORTE.y, chemin: [
+        { x: COULOIR_X, y: PORTE.y }, { x: COULOIR_X, y: p.allee }, { x: p.x, y: p.allee }, { x: p.x, y: p.siegeY },
+      ],
+      etat: 'arrive', saut: 0, graine: Math.floor(Math.random() * 30), dir: 0,
+    };
+    this.acteurs.set(id, a);
+    return a;
+  }
+
+  depart(id) {
+    const a = this.acteurs.get(id);
+    if (!a) return;
+    const p = POSTES[a.poste];
+    a.etat = 'part';
+    a.chemin = [{ x: p.x, y: p.allee }, { x: COULOIR_X, y: p.allee }, { x: COULOIR_X, y: PORTE.y }, { x: PORTE.x, y: PORTE.y }];
+    // le livrable vole jusqu'au bureau de Max
+    this.papiers.push({ x: p.x, y: p.bureauY - 4, vers: { x: BUREAU_MAX.x - 14, y: BUREAU_MAX.y + 4 }, k: 0, couleur: a.couleur });
+  }
+
+  sautiller(id) {
+    const a = id === 'max' ? this.max : this.acteurs.get(id);
+    if (a) a.saut = 0.001;
+  }
+
+  boucle(maintenant) {
+    const dt = Math.min(50, maintenant - this.dernier);
+    this.dernier = maintenant;
+    const t = maintenant - this.t0;
+    const ctx = this.ctx;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(this.decor, 0, 0);
+
+    // déplacements
+    for (const a of this.acteurs.values()) {
+      if (a.saut) { a.saut += dt / 300; if (a.saut >= 1) a.saut = 0; }
+      if (!a.chemin.length) continue;
+      const cible = a.chemin[0];
+      const dx = cible.x - a.x, dy = cible.y - a.y;
+      const d = Math.hypot(dx, dy);
+      const v = 0.055 * dt;
+      a.dir = Math.abs(dx) > 0.5 ? Math.sign(dx) : 0;
+      if (d <= v) {
+        a.x = cible.x; a.y = cible.y; a.chemin.shift();
+        if (!a.chemin.length) {
+          if (a.etat === 'arrive') { a.etat = 'travaille'; a.saut = 0.001; }
+          if (a.etat === 'part') a.etat = 'parti';
+        }
+      } else { a.x += (dx / d) * v; a.y += (dy / d) * v; }
+    }
+    for (const [id, a] of this.acteurs) if (a.etat === 'parti') this.acteurs.delete(id);
+    if (this.max.saut) { this.max.saut += dt / 300; if (this.max.saut >= 1) this.max.saut = 0; }
+
+    // tri par profondeur : postes (bureau + éventuel occupant), Max, marcheurs
+    const dessins = [];
+    const occupants = new Map();
+    for (const a of this.acteurs.values()) if (a.etat === 'travaille') occupants.set(a.poste, a);
+    POSTES.forEach((p, i) => {
+      const o = occupants.get(i);
+      dessins.push({
+        z: p.bureauY, f: () => {
+          if (o) dessinerRobot(ctx, o.x, o.y, o.couleur, { t, assis: true, travaille: true, saut: o.saut, graine: o.graine });
+          bureau(ctx, p.x, p.bureauY, !!o, o ? teinte(o.couleur, 0.3) : null, t);
+        },
+      });
+    });
+    dessins.push({
+      z: BUREAU_MAX.y, f: () => {
+        dessinerRobot(ctx, this.max.x, this.max.y, this.max.couleur, {
+          t, assis: true, travaille: this.max.travaille, cravate: true, casque: true, saut: this.max.saut, graine: 7,
+        });
+        bureau(ctx, BUREAU_MAX.x, BUREAU_MAX.y, this.max.travaille, '#ffd9a0', t, true);
+      },
+    });
+    for (const a of this.acteurs.values()) {
+      if (a.etat === 'travaille') continue;
+      dessins.push({ z: a.y, f: () => dessinerRobot(ctx, a.x, a.y, a.couleur, { t, marche: a.chemin.length > 0, dir: a.dir, graine: a.graine }) });
+    }
+    dessins.sort((a, b) => a.z - b.z).forEach((d) => d.f());
+
+    // papiers volants
+    this.papiers = this.papiers.filter((p) => p.k < 1);
+    for (const p of this.papiers) {
+      p.k += dt / 900;
+      const k = Math.min(1, p.k);
+      const x = p.x + (p.vers.x - p.x) * k;
+      const y = p.y + (p.vers.y - p.y) * k - Math.sin(k * Math.PI) * 24;
+      r(ctx, x - 3, y - 4, 7, 9, '#ffffff');
+      r(ctx, x - 2, y - 2, 5, 1, p.couleur); r(ctx, x - 2, y, 4, 1, '#9aa4b1'); r(ctx, x - 2, y + 2, 5, 1, '#9aa4b1');
+    }
+
+    for (const f of this.ecouteurs) f(t);
+    requestAnimationFrame((tt) => this.boucle(tt));
+  }
+
+  // position (en px scène) de la tête d'un acteur, pour les bulles DOM
+  tete(id) {
+    if (id === 'max') return { x: this.max.x, y: this.max.y - 26 };
+    const a = this.acteurs.get(id);
+    return a ? { x: a.x, y: a.y - 26 } : null;
+  }
+}
+
+</script>
+<script>
+(() => {
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const attendre = (ms, signal) => new Promise((ok) => { const t = setTimeout(ok, ms); signal?.addEventListener('abort', () => { clearTimeout(t); ok(); }); });
+const stockage = {
+  lire(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  ecrire(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* stockage indisponible */ } },
+};
+
+// ---------- l'équipe ----------
+const OUTILS = {
+  lire: 'Lire un fichier',
+  ecrire: 'Écrire un fichier',
+  modifier: 'Retoucher un fichier',
+  lister: 'Lister les fichiers',
+};
+const EQUIPE_ORIGINE = {
+  chef: { id: 'max', nom: 'Max', metier: 'Chef de projet', couleur: '#f2a33a' },
+  specialistes: [
+    { id: 'chercheuse', nom: 'Léa', metier: 'Recherche', couleur: '#4fb6e8', outils: ['lire', 'ecrire', 'lister'],
+      consigne: "Tu rassembles les connaissances utiles sur le sujet (faits, chiffres, exemples, idées), tu signales ce qui mériterait d'être vérifié, et tu écris tes notes dans un fichier Markdown." },
+    { id: 'developpeur', nom: 'Hugo', metier: 'Code', couleur: '#7bd36b', outils: ['lire', 'ecrire', 'modifier', 'lister'],
+      consigne: 'Tu écris du code simple, lisible et qui fonctionne sans étape de build (HTML/CSS/JS autonome). Une page web tient dans index.html, avec style.css et app.js si besoin.' },
+    { id: 'designer', nom: 'Inès', metier: 'Design', couleur: '#e86fb0', outils: ['lire', 'ecrire', 'modifier', 'lister'],
+      consigne: 'Tu proposes une identité visuelle cohérente (palette, typographies, espacements) et tu la livres en fichiers : style.css, icônes SVG, guide de style en Markdown.' },
+    { id: 'redacteur', nom: 'Paul', metier: 'Rédaction', couleur: '#b48cf2', outils: ['lire', 'ecrire', 'modifier'],
+      consigne: 'Tu écris des textes clairs, vivants et sans fautes, adaptés au public visé, livrés en Markdown.' },
+    { id: 'analyste', nom: 'Zoé', metier: 'Analyse', couleur: '#f06a5a', outils: ['lire', 'ecrire', 'lister'],
+      consigne: 'Tu analyses les données ou documents disponibles, tu en tires chiffres clés, tendances et recommandations concrètes, dans un rapport Markdown.' },
+    { id: 'relecteur', nom: 'Noé', metier: 'Relecture', couleur: '#e8d35a', outils: ['lire', 'modifier', 'lister'],
+      consigne: "Tu relis les fichiers produits par l'équipe, tu corriges directement fautes, incohérences et bugs évidents, puis tu résumes tes corrections." },
+  ],
+};
+let equipe = stockage.lire('bureau.equipe') || structuredClone(EQUIPE_ORIGINE);
+const sauverEquipe = () => stockage.ecrire('bureau.equipe', equipe);
+
+// ---------- Claude (capacité « sample » de la page) ----------
+let sample = null;
+let avecOutils = false;
+const pret = (window.claude?.use ? window.claude.use('sample') : Promise.resolve(null))
+  .then(async (s) => {
+    sample = s;
+    if (s) avecOutils = !!(await s.limits().catch(() => null))?.tools;
+  })
+  .catch(() => { sample = null; })
+  .finally(majMode);
+
+function majMode() {
+  const p = $('#pastille');
+  if (sample) {
+    p.textContent = '● équipe disponible'; p.classList.add('ok');
+    $('#avis').hidden = true;
+  } else {
+    p.textContent = '● mode démo';
+    $('#demo').checked = true; $('#demo').disabled = true;
+    $('#avis').hidden = false;
+    $('#avis').textContent = "Ici, l'équipe ne peut pas joindre Claude : ouvre ce bureau depuis son lien claude.ai pour une vraie mission. En attendant, la démo te montre comment ça se passe.";
+  }
+}
+
+// ---------- fichiers de la mission (en mémoire) ----------
+const fichiers = new Map();
+const normaliser = (p) => String(p || '').replace(/\\/g, '/').replace(/^\.?\/+/, '').replace(/\.\.\//g, '').trim().slice(0, 120);
+
+// ---------- scène ----------
+const bureau = new Bureau($('#canvas'));
+const calque = $('#calque');
+let son = true, audio;
+function bip(freq = 660, duree = 0.07, type = 'square', vol = 0.04) {
+  if (!son) return;
+  try {
+    audio ||= new AudioContext();
+    if (audio.state === 'suspended') audio.resume();
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, audio.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + duree);
+    o.connect(g).connect(audio.destination); o.start(); o.stop(audio.currentTime + duree);
+  } catch { /* pas d'audio */ }
+}
+const jingle = (notes) => notes.forEach((f, i) => setTimeout(() => bip(f, 0.09), i * 90));
+$('#btn-son').onclick = () => {
+  son = !son;
+  $('#btn-son').textContent = son ? '🔊' : '🔈';
+  $('#btn-son').setAttribute('aria-label', son ? 'Couper le son' : 'Activer le son');
+};
+
+const overlays = new Map();
+function overlay(id, nom, couleur) {
+  if (overlays.has(id)) return overlays.get(id);
+  const tag = document.createElement('div');
+  tag.className = 'etiquette'; tag.textContent = nom; tag.style.setProperty('--c', couleur);
+  calque.append(tag);
+  const o = { tag, bulle: null, timer: null };
+  overlays.set(id, o);
+  return o;
+}
+function bulle(id, texte, duree = 0) {
+  const o = overlays.get(id);
+  if (!o) return;
+  o.bulle?.remove(); clearTimeout(o.timer);
+  const b = document.createElement('div');
+  b.className = 'bulle' + (id === 'max' ? ' max' : '');
+  b.textContent = texte.length > 90 ? texte.slice(0, 89) + '…' : texte;
+  calque.append(b);
+  o.bulle = b;
+  if (duree) o.timer = setTimeout(() => { b.remove(); if (o.bulle === b) o.bulle = null; }, duree);
+}
+function retirerOverlay(id) {
+  const o = overlays.get(id);
+  if (!o) return;
+  clearTimeout(o.timer); o.tag.remove(); o.bulle?.remove(); overlays.delete(id);
+}
+bureau.surFrame(() => {
+  for (const [id, o] of overlays) {
+    const p = bureau.tete(id);
+    if (!p) { if (id !== 'max') retirerOverlay(id); continue; }
+    const x = (p.x / W) * 100 + '%', y = (p.y / H) * 100 + '%';
+    o.tag.style.left = x; o.tag.style.top = y;
+    if (o.bulle) { o.bulle.style.left = x; o.bulle.style.top = y; }
+  }
+});
+
+let ecriture;
+function maxDit(texte) {
+  const el = $('#dialogue-texte');
+  clearInterval(ecriture);
+  const plein = String(texte).replace(/[#*`_]+/g, '').trim().slice(0, 600);
+  let i = 0;
+  el.textContent = '';
+  ecriture = setInterval(() => {
+    i += 2;
+    el.textContent = plein.slice(0, i);
+    if (i % 8 === 0) bip(520 + Math.random() * 80, 0.03, 'square', 0.015);
+    if (i >= plein.length) clearInterval(ecriture);
+  }, 22);
+  bureau.sautiller('max');
+}
+
+function portrait(canvas, couleur, chef = false) {
+  const g = canvas.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  const dessiner = (t) => {
+    if (!canvas.isConnected) return;
+    g.clearRect(0, 0, canvas.width, canvas.height);
+    dessinerRobot(g, canvas.width / 2, canvas.height - 1, typeof couleur === 'function' ? couleur() : couleur, { t, cravate: chef, casque: chef, graine: 3 });
+    requestAnimationFrame(dessiner);
+  };
+  requestAnimationFrame(dessiner);
+}
+
+// ---------- onglets ----------
+function ouvrirOnglet(nom) {
+  document.querySelectorAll('.onglets button').forEach((x) => x.classList.toggle('actif', x.dataset.onglet === nom));
+  document.querySelectorAll('.onglet').forEach((o) => { o.hidden = o.id !== 'onglet-' + nom; });
+}
+document.querySelectorAll('.onglets button').forEach((b) => { b.onclick = () => ouvrirOnglet(b.dataset.onglet); });
+
+function journal(html) {
+  const li = document.createElement('li');
+  const h = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  li.innerHTML = `<time>${h}</time>${html}`;
+  $('#journal').prepend(li);
+}
+
+// ---------- panneau équipe (modifiable) ----------
+let enEdition = null;
+function afficherEquipe() {
+  const ul = $('#equipe');
+  ul.innerHTML = '';
+  const chef = { ...equipe.chef, outils: [], consigne: 'Lit ta demande, fait le plan, appelle les bons spécialistes et fait le bilan.' };
+  [chef, ...equipe.specialistes].forEach((m, i) => {
+    const li = document.createElement('li');
+    li.className = 'membre';
+    const c = document.createElement('canvas'); c.width = 20; c.height = 26;
+    li.append(c);
+    const d = document.createElement('div');
+    d.className = 'infos';
+    d.innerHTML = '<div class="nom"></div><div class="metier"></div><div class="puces"></div>';
+    d.querySelector('.nom').textContent = m.nom;
+    d.querySelector('.metier').textContent = i === 0 ? `${m.metier} — ${chef.consigne}` : m.metier;
+    for (const o of m.outils) {
+      const s = document.createElement('span'); s.className = 'puce'; s.textContent = OUTILS[o] || o;
+      d.querySelector('.puces').append(s);
+    }
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn petit secondaire'; b.textContent = enEdition === m.id ? 'Fermer' : 'Modifier';
+    b.style.marginTop = '8px';
+    b.onclick = () => { enEdition = enEdition === m.id ? null : m.id; afficherEquipe(); };
+    d.append(b);
+    if (enEdition === m.id) d.append(formulaire(m, i === 0));
+    li.append(d); ul.append(li);
+    portrait(c, m.couleur, i === 0);
+  });
+  $('#dialogue-nom').textContent = `${equipe.chef.nom} · ${equipe.chef.metier}`;
+  bureau.max.couleur = equipe.chef.couleur;
+  if (overlays.get('max')) overlays.get('max').tag.textContent = equipe.chef.nom;
+  $('#btn-ajout').disabled = equipe.specialistes.length >= 8;
+}
+
+function formulaire(m, estChef) {
+  const f = document.createElement('div');
+  f.className = 'edition';
+  const cible = estChef ? equipe.chef : equipe.specialistes.find((s) => s.id === m.id);
+  const champ = (label, cle, type = 'text') => {
+    const l = document.createElement('label');
+    l.textContent = label;
+    const inp = document.createElement(type === 'zone' ? 'textarea' : 'input');
+    if (type !== 'zone') inp.type = type;
+    inp.id = `edit-${m.id}-${cle}`;
+    inp.value = cible[cle] || '';
+    inp.oninput = () => {
+      cible[cle] = inp.value.slice(0, cle === 'consigne' ? 1500 : 40);
+      sauverEquipe();
+      if (cle === 'couleur' || cle === 'nom') { const ouvert = enEdition; afficherEquipe(); enEdition = ouvert; document.getElementById(inp.id)?.focus(); }
+    };
+    l.append(inp);
+    return l;
+  };
+  f.append(champ('Nom', 'nom'), champ('Métier', 'metier'));
+  const r = document.createElement('div'); r.className = 'rangee';
+  const lc = champ('Couleur', 'couleur', 'color'); r.append(lc); f.append(r);
+  if (!estChef) {
+    f.append(champ('Consigne (comment il ou elle travaille)', 'consigne', 'zone'));
+    const cases = document.createElement('div'); cases.className = 'cases';
+    for (const [o, nom] of Object.entries(OUTILS)) {
+      const l = document.createElement('label');
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.id = `edit-${m.id}-outil-${o}`;
+      cb.checked = cible.outils.includes(o);
+      cb.onchange = () => {
+        cible.outils = cb.checked ? [...new Set([...cible.outils, o])] : cible.outils.filter((x) => x !== o);
+        sauverEquipe(); afficherEquipe();
+      };
+      l.style.display = 'flex'; l.style.gap = '4px'; l.style.alignItems = 'center';
+      l.append(cb, nom); cases.append(l);
+    }
+    f.append(cases);
+    const suppr = document.createElement('button');
+    suppr.type = 'button'; suppr.className = 'btn petit secondaire'; suppr.textContent = 'Retirer de l\'équipe';
+    suppr.onclick = () => {
+      if (equipe.specialistes.length <= 1) return;
+      equipe.specialistes = equipe.specialistes.filter((s) => s.id !== m.id);
+      enEdition = null; sauverEquipe(); afficherEquipe();
+    };
+    f.append(suppr);
+  }
+  return f;
+}
+$('#btn-ajout').onclick = () => {
+  const couleurs = ['#5fd3c4', '#ff9f68', '#9fb4ff', '#c0e36b'];
+  const id = 'agent-' + Date.now().toString(36);
+  equipe.specialistes.push({
+    id, nom: 'Nouveau', metier: 'Spécialiste', couleur: couleurs[equipe.specialistes.length % couleurs.length],
+    outils: ['lire', 'ecrire', 'lister'], consigne: 'Décris ici comment cet agent travaille.',
+  });
+  enEdition = id; sauverEquipe(); afficherEquipe();
+};
+$('#btn-reset').onclick = () => {
+  if ($('#btn-reset').dataset.confirme !== '1') {
+    $('#btn-reset').dataset.confirme = '1'; $('#btn-reset').textContent = 'Confirmer ?';
+    setTimeout(() => { $('#btn-reset').dataset.confirme = ''; $('#btn-reset').textContent = "Équipe d'origine"; }, 3000);
+    return;
+  }
+  equipe = structuredClone(EQUIPE_ORIGINE); enEdition = null; sauverEquipe(); afficherEquipe();
+  $('#btn-reset').dataset.confirme = ''; $('#btn-reset').textContent = "Équipe d'origine";
+};
+
+// ---------- panneau fichiers ----------
+const EXT_TELECHARGEABLES = ['txt', 'json', 'md', 'csv', 'html', 'svg'];
+function afficherFichiers() {
+  const ul = $('#fichiers');
+  ul.innerHTML = '';
+  $('#fichiers-vide').hidden = fichiers.size > 0;
+  $('#actions-fichiers').hidden = fichiers.size === 0;
+  $('#nb-fichiers').hidden = fichiers.size === 0;
+  $('#nb-fichiers').textContent = fichiers.size;
+  for (const [nom, contenu] of [...fichiers].sort()) {
+    const li = document.createElement('li');
+    li.className = 'fichier';
+    li.innerHTML = '<span class="nom"></span><span class="taille"></span>';
+    li.querySelector('.nom').textContent = '📄 ' + nom;
+    li.querySelector('.taille').textContent = (new Blob([contenu]).size / 1024).toFixed(1) + ' Ko';
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn petit'; b.textContent = 'Voir';
+    b.onclick = () => apercu(nom);
+    li.append(b); ul.append(li);
+  }
+}
+
+// Remplace les <link>/<script src> locaux par leur contenu pour un aperçu autonome.
+function pageAutonome(nom) {
+  const dossier = nom.includes('/') ? nom.slice(0, nom.lastIndexOf('/') + 1) : '';
+  const trouver = (ref) => fichiers.get(normaliser(dossier + ref)) ?? fichiers.get(normaliser(ref));
+  return fichiers.get(nom)
+    .replace(/<link[^>]+href=["']([^"':]+\.css)["'][^>]*>/gi, (m, ref) => { const c = trouver(ref); return c != null ? `<style>${c}</style>` : m; })
+    .replace(/<script([^>]*)src=["']([^"':]+\.js)["']([^>]*)>\s*<\/script>/gi, (m, a, ref, b) => { const c = trouver(ref); return c != null ? `<script${a}${b}>${c.replace(/<\/script/gi, '<\\/script')}<\/script>` : m; });
+}
+
+let fichierOuvert = null;
+function apercu(nom) {
+  fichierOuvert = nom;
+  $('#apercu').hidden = false;
+  $('#apercu-nom').textContent = nom;
+  const html = /\.html?$/i.test(nom), svg = /\.svg$/i.test(nom);
+  $('#apercu-cadre').hidden = !(html || svg);
+  $('#apercu-texte').hidden = html || svg;
+  if (html) $('#apercu-cadre').srcdoc = pageAutonome(nom);
+  else if (svg) $('#apercu-cadre').srcdoc = `<body style="margin:0;display:grid;place-items:center;min-height:100vh">${fichiers.get(nom)}</body>`;
+  else $('#apercu-texte').textContent = fichiers.get(nom);
+  $('#apercu-fermer').focus();
+}
+$('#apercu-fermer').onclick = () => { $('#apercu').hidden = true; $('#apercu-cadre').srcdoc = ''; };
+$('#apercu').onclick = (e) => { if (e.target.id === 'apercu') $('#apercu-fermer').click(); };
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#apercu').hidden) $('#apercu-fermer').click(); });
+
+async function enregistrer(nomFichier, data) {
+  const dl = window.claude?.use ? await window.claude.use('downloads').catch(() => null) : null;
+  if (!dl) { maxDit("Le téléchargement n'est possible que depuis le lien claude.ai du bureau."); return; }
+  try { await dl.save({ filename: nomFichier, data }); }
+  catch (e) {
+    if (e?.code === 'declined') return;
+    maxDit("Je n'ai pas pu préparer le téléchargement. Essaie l'archive .zip.");
+  }
+}
+$('#apercu-dl').onclick = () => {
+  const nom = fichierOuvert;
+  const ext = nom.split('.').pop().toLowerCase();
+  const base = nom.split('/').pop();
+  enregistrer(EXT_TELECHARGEABLES.includes(ext) ? base : base + '.txt', fichiers.get(nom));
+};
+$('#btn-zip').onclick = () => enregistrer(`mission-${new Date().toISOString().slice(0, 10)}.zip`, zip(fichiers));
+
+// Petit ZIP sans compression (format « stored »), suffisant pour des fichiers texte.
+function zip(map) {
+  const enc = new TextEncoder();
+  const table = new Uint32Array(256).map((_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+  const crc = (b) => { let c = 0xffffffff; for (const x of b) c = table[(c ^ x) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+  const parts = [], central = [];
+  let offset = 0;
+  for (const [nom, contenu] of map) {
+    const n = enc.encode(nom), d = enc.encode(contenu), c = crc(d);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true);
+    h.setUint32(14, c, true); h.setUint32(18, d.length, true); h.setUint32(22, d.length, true); h.setUint16(26, n.length, true);
+    parts.push(new Uint8Array(h.buffer), n, d);
+    const e = new DataView(new ArrayBuffer(46));
+    e.setUint32(0, 0x02014b50, true); e.setUint16(4, 20, true); e.setUint16(6, 20, true); e.setUint16(8, 0x0800, true);
+    e.setUint32(16, c, true); e.setUint32(20, d.length, true); e.setUint32(24, d.length, true); e.setUint16(28, n.length, true);
+    e.setUint32(42, offset, true);
+    central.push(new Uint8Array(e.buffer), n);
+    offset += 30 + n.length + d.length;
+  }
+  const taille = central.reduce((s, p) => s + p.length, 0);
+  const fin = new DataView(new ArrayBuffer(22));
+  fin.setUint32(0, 0x06054b50, true); fin.setUint16(8, map.size, true); fin.setUint16(10, map.size, true);
+  fin.setUint32(12, taille, true); fin.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, new Uint8Array(fin.buffer)], { type: 'application/zip' });
+}
+
+// ---------- événements du bureau ----------
+let enCours = false;
+let controleur = null;
+const taches = new Map();
+const indexMembre = (m) => Math.max(0, equipe.specialistes.findIndex((s) => s.id === m.id));
+
+function setEnCours(v) {
+  enCours = v;
+  $('#btn-go').disabled = v;
+  $('#btn-stop').hidden = !v;
+  bureau.max.travaille = v;
+}
+
+function emettre(ev) {
+  switch (ev.type) {
+    case 'mission:debut':
+      for (const id of [...overlays.keys()]) if (id !== 'max') retirerOverlay(id);
+      taches.clear(); fichiers.clear(); afficherFichiers();
+      $('#liste-taches').innerHTML = '';
+      $('#bilan').hidden = true;
+      $('#mission-vide').hidden = true; $('#mission-infos').hidden = false;
+      $('#mission-titre').textContent = ev.demande;
+      ouvrirOnglet('mission');
+      setEnCours(true);
+      jingle([523, 659, 784]);
+      journal(`<b>Nouvelle mission</b> — ${esc(ev.demande)}`);
+      break;
+    case 'max:dit':
+      maxDit(ev.texte);
+      journal(`<b>${esc(equipe.chef.nom)}</b> : ${esc(ev.texte.slice(0, 200))}`);
+      break;
+    case 'agent:arrive': {
+      bureau.arrivee(ev.id, ev.membre, indexMembre(ev.membre));
+      overlay(ev.id, ev.membre.nom, ev.membre.couleur);
+      bulle('max', `📣 ${ev.membre.nom}, à toi !`, 2500);
+      bulle(ev.id, `👋 ${ev.tache}`, 4000);
+      const li = document.createElement('li');
+      li.className = 'tache';
+      li.style.setProperty('--c', ev.membre.couleur);
+      li.innerHTML = '<div class="haut"><span></span><span class="statut">au travail…</span></div><div class="derniere">Arrive au bureau</div>';
+      li.querySelector('.haut span').textContent = `${ev.membre.nom} · ${ev.tache}`;
+      $('#liste-taches').append(li);
+      taches.set(ev.id, { el: li, membre: ev.membre });
+      bip(880, 0.08); setTimeout(() => bip(1100, 0.08), 90);
+      journal(`<b>${esc(ev.membre.nom)}</b> arrive : ${esc(ev.tache)}`);
+      break;
+    }
+    case 'agent:action': {
+      const t = `${ev.icone} ${ev.texte}`;
+      bulle(ev.id, t);
+      if (!ev.discret) { bureau.sautiller(ev.id); bip(740 + Math.random() * 200, 0.04, 'triangle', 0.03); }
+      const tc = taches.get(ev.id);
+      if (tc) tc.el.querySelector('.derniere').textContent = t;
+      if (!ev.discret) journal(`<b>${esc(tc?.membre.nom || '?')}</b> ${esc(t.slice(0, 160))}`);
+      break;
+    }
+    case 'agent:part': {
+      const tc = taches.get(ev.id);
+      bulle(ev.id, ev.ok === false ? '😵 Je n\'ai pas pu finir' : '✅ Terminé !', 2500);
+      bureau.depart(ev.id);
+      bip(988, 0.1, 'triangle');
+      if (tc) {
+        tc.el.classList.add(ev.ok === false ? 'echec' : 'fini');
+        tc.el.querySelector('.statut').textContent = ev.ok === false ? '✗ interrompu' : '✓ terminé';
+        if (ev.resume) {
+          const d = document.createElement('details');
+          d.innerHTML = '<summary>Compte rendu</summary><p></p>';
+          d.querySelector('p').textContent = ev.resume;
+          tc.el.append(d);
+        }
+      }
+      journal(`<b>${esc(tc?.membre.nom || '?')}</b> a fini et repart.`);
+      break;
+    }
+    case 'mission:fin':
+      setEnCours(false);
+      maxDit(ev.texte);
+      $('#bilan').hidden = false;
+      $('#bilan-texte').textContent = ev.texte;
+      if (ev.ok) jingle([523, 659, 784, 1046]); else jingle([440, 330]);
+      journal(`<b>Fin de mission</b> ${ev.ok ? '✅' : '⚠️'}`);
+      break;
+  }
+}
+
+// ---------- la vraie mission ----------
+const MESSAGES_ERREUR = {
+  not_granted: "Il faut autoriser le bureau à utiliser Claude pour que l'équipe travaille. Tu peux rester en démo.",
+  sampling_disabled: "Claude n'est pas disponible pour ce compte. Tu peux rester en démo.",
+  rate_limited: "On a beaucoup travaillé ! Ta limite d'utilisation de Claude est atteinte, réessaie un peu plus tard.",
+  session_expired: 'Ta session claude.ai a expiré : reconnecte-toi puis relance la mission.',
+  prompt_too_large: 'Le dossier est devenu trop gros pour moi. Essaie une demande plus courte.',
+  refused: "Claude a refusé cette demande. Reformule-la autrement.",
+  invalid_json: "Je me suis embrouillé dans mon plan. Relance la mission, s'il te plaît.",
+};
+const messageErreur = (e) => MESSAGES_ERREUR[e?.code] || "Un souci de connexion a interrompu le travail. Tu peux relancer la mission.";
+
+function promptPlan(demande) {
+  const liste = equipe.specialistes.map((s) => `- "${s.id}" : ${s.nom}, ${s.metier}. ${s.consigne}`).join('\n');
+  return `Tu es ${equipe.chef.nom}, chef de projet d'une petite équipe d'agents IA. Tu ne fais pas le travail toi-même : tu découpes la demande et tu la confies aux bons spécialistes.
+
+Ton équipe :
+${liste}
+
+Demande de l'utilisateur :
+"""${demande}"""
+
+Règles :
+- Choisis seulement les spécialistes utiles (souvent 2 à 4, jamais plus de 5 tâches).
+- "etape" : 1 pour les tâches qui peuvent démarrer tout de suite (en parallèle), 2 pour celles qui ont besoin du travail de l'étape 1 (relecture, intégration…), 3 au maximum.
+- Chaque consigne est précise et autonome, et nomme les fichiers à produire (ex. index.html, style.css, notes.md).
+- "message" : ce que tu dis à l'utilisateur pour annoncer ton plan, en 1 à 2 phrases courtes, chaleureuses, en français.
+
+Réponds uniquement avec un objet JSON :
+{"message": "…", "taches": [{"specialiste": "<identifiant>", "titre": "<4 à 6 mots>", "consigne": "…", "etape": 1}]}`;
+}
+
+function promptSpecialiste(membre, tache, demande, autres) {
+  const existants = [...fichiers.keys()];
+  return `Tu es ${membre.nom}, ${membre.metier} dans l'équipe d'agents de ${equipe.chef.nom}.
+${membre.consigne}
+
+Demande initiale de l'utilisateur : """${demande}"""
+Ta tâche (« ${tache.titre} ») : ${tache.consigne}
+${autres.length ? `Tes collègues travaillent en même temps sur : ${autres.join(' ; ')}.` : ''}
+Fichiers déjà présents dans le dossier de la mission : ${existants.length ? existants.join(', ') : 'aucun'}.
+
+Travaille en français. Utilise tes outils pour lire et écrire les fichiers du dossier de la mission : c'est le seul moyen de livrer ton travail. Écris des fichiers complets et soignés.
+Quand tu as fini, réponds par un compte rendu de 2 à 3 phrases : ce que tu as fait et les fichiers livrés.`;
+}
+
+function outilsPour(id, membre, signal) {
+  const action = (icone, texte) => { if (!signal.aborted) emettre({ type: 'agent:action', id, icone, texte }); };
+  const court = (s, n = 40) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+  const tous = {
+    lister: {
+      name: 'lister_fichiers',
+      description: 'Liste les fichiers du dossier de la mission avec leur taille. Renvoie un tableau de {chemin, caracteres}.',
+      execute() {
+        action('🗂️', 'Regarde les fichiers');
+        return [...fichiers].map(([chemin, c]) => ({ chemin, caracteres: c.length }));
+      },
+    },
+    lire: {
+      name: 'lire_fichier',
+      description: 'Lit un fichier du dossier de la mission et renvoie son contenu (texte).',
+      inputSchema: { type: 'object', properties: { chemin: { type: 'string', description: 'ex. index.html' } }, required: ['chemin'] },
+      execute(input) {
+        const chemin = normaliser(input.chemin);
+        if (!fichiers.has(chemin)) throw new Error(`Fichier introuvable : ${chemin}. Fichiers présents : ${[...fichiers.keys()].join(', ') || 'aucun'}`);
+        action('📖', `Lit ${court(chemin)}`);
+        return fichiers.get(chemin).slice(0, 30000);
+      },
+    },
+    ecrire: {
+      name: 'ecrire_fichier',
+      description: 'Crée ou remplace entièrement un fichier du dossier de la mission. Renvoie une confirmation.',
+      inputSchema: {
+        type: 'object',
+        properties: { chemin: { type: 'string', description: 'nom du fichier, ex. index.html ou docs/notes.md' }, contenu: { type: 'string', description: 'contenu complet du fichier' } },
+        required: ['chemin', 'contenu'],
+      },
+      execute(input) {
+        const chemin = normaliser(input.chemin);
+        if (!chemin) throw new Error('Chemin vide.');
+        if (signal.aborted) throw new Error('Mission arrêtée.');
+        fichiers.set(chemin, String(input.contenu ?? ''));
+        afficherFichiers();
+        action('✍️', `Écrit ${court(chemin)}`);
+        return `Fichier ${chemin} enregistré (${fichiers.get(chemin).length} caractères).`;
+      },
+    },
+    modifier: {
+      name: 'modifier_fichier',
+      description: 'Remplace un passage exact d\'un fichier existant par un nouveau texte. Le passage doit apparaître tel quel dans le fichier.',
+      inputSchema: {
+        type: 'object',
+        properties: { chemin: { type: 'string' }, ancien: { type: 'string', description: 'passage exact à remplacer' }, nouveau: { type: 'string', description: 'texte de remplacement' } },
+        required: ['chemin', 'ancien', 'nouveau'],
+      },
+      execute(input) {
+        const chemin = normaliser(input.chemin);
+        const c = fichiers.get(chemin);
+        if (c == null) throw new Error(`Fichier introuvable : ${chemin}`);
+        const ancien = String(input.ancien ?? '');
+        if (!ancien || !c.includes(ancien)) throw new Error('Passage introuvable dans le fichier : relis-le avec lire_fichier.');
+        if (signal.aborted) throw new Error('Mission arrêtée.');
+        fichiers.set(chemin, c.replace(ancien, String(input.nouveau ?? '')));
+        afficherFichiers();
+        action('✏️', `Retouche ${court(chemin)}`);
+        return `Fichier ${chemin} modifié.`;
+      },
+    },
+  };
+  return membre.outils.filter((o) => tous[o]).map((o) => tous[o]);
+}
+
+let compteur = 0;
+async function travailler(tache, demande, autres, signal) {
+  const membre = equipe.specialistes.find((s) => s.id === tache.specialiste) || equipe.specialistes[0];
+  const id = 'a' + (++compteur);
+  emettre({ type: 'agent:arrive', id, membre, tache: tache.titre || membre.metier });
+  await attendre(2600, signal); // le temps de rejoindre son bureau
+  if (signal.aborted) { emettre({ type: 'agent:part', id, ok: false }); return null; }
+  emettre({ type: 'agent:action', id, icone: '💭', texte: 'Réfléchit…', discret: true });
+  const surTexte = ({ text }) => {
+    const fin = text.trim().split('\n').filter(Boolean).pop() || '';
+    if (fin) emettre({ type: 'agent:action', id, icone: '💬', texte: fin.slice(-80), discret: true });
+  };
+  try {
+    let resume;
+    const prompt = promptSpecialiste(membre, tache, demande, autres);
+    const outils = outilsPour(id, membre, signal);
+    if (avecOutils && outils.length) {
+      ({ text: resume } = await sample(prompt, { signal, tools: outils, onText: surTexte }));
+    } else {
+      // Sans outils de page : l'agent rend ses fichiers en JSON.
+      const r = await sample.json(prompt + '\n\nTu n\'as pas d\'outils ici : réponds uniquement avec {"fichiers": [{"chemin": "…", "contenu": "…"}], "resume": "…"}.', { signal, onText: () => emettre({ type: 'agent:action', id, icone: '⌨️', texte: 'Écrit…', discret: true }) });
+      for (const f of r?.fichiers || []) if (f?.chemin) { fichiers.set(normaliser(f.chemin), String(f.contenu ?? '')); emettre({ type: 'agent:action', id, icone: '✍️', texte: `Écrit ${normaliser(f.chemin)}` }); }
+      afficherFichiers();
+      resume = String(r?.resume || '');
+    }
+    emettre({ type: 'agent:part', id, resume: resume.trim().slice(-1200) });
+    return { membre, titre: tache.titre, resume: resume.trim().slice(-800) };
+  } catch (e) {
+    emettre({ type: 'agent:part', id, ok: false, resume: e?.code === 'cancelled' ? '' : messageErreur(e) });
+    if (['not_granted', 'sampling_disabled', 'rate_limited', 'session_expired'].includes(e?.code)) throw e;
+    return { membre, titre: tache.titre, resume: `(interrompu : ${messageErreur(e)})` };
+  }
+}
+
+async function missionReelle(demande) {
+  controleur = new AbortController();
+  const signal = controleur.signal;
+  emettre({ type: 'mission:debut', demande });
+  emettre({ type: 'max:dit', texte: 'Je lis ta demande…' });
+  try {
+    const plan = await sample.json(promptPlan(demande), { signal, cache: false });
+    const ids = new Set(equipe.specialistes.map((s) => s.id));
+    const liste = (Array.isArray(plan?.taches) ? plan.taches : [])
+      .filter((t) => t && ids.has(t.specialiste) && t.consigne)
+      .slice(0, 5)
+      .map((t) => ({ ...t, titre: String(t.titre || '').slice(0, 60), etape: Math.min(3, Math.max(1, Number(t.etape) || 1)) }));
+    if (!liste.length) throw { code: 'invalid_json' };
+    emettre({ type: 'max:dit', texte: String(plan.message || 'Au travail, l\'équipe !') });
+    await attendre(1200, signal);
+
+    const comptes = [];
+    for (const etape of [1, 2, 3]) {
+      const groupe = liste.filter((t) => t.etape === etape);
+      if (!groupe.length || signal.aborted) continue;
+      if (etape > 1) emettre({ type: 'max:dit', texte: `Étape ${etape} : ${groupe.map((t) => equipe.specialistes.find((s) => s.id === t.specialiste)?.nom).join(', ')}, à vous !` });
+      const res = await Promise.all(groupe.map((t, i) => attendre(i * 500, signal).then(() =>
+        travailler(t, demande, groupe.filter((x) => x !== t).map((x) => x.titre), signal))));
+      comptes.push(...res.filter(Boolean));
+    }
+    if (signal.aborted) return;
+
+    emettre({ type: 'max:dit', texte: 'Je fais le point…' });
+    const { text } = await sample(`Tu es ${equipe.chef.nom}, chef de projet. Ton équipe vient de terminer cette demande : """${demande}"""
+
+Comptes rendus :
+${comptes.map((c) => `- ${c.membre.nom} (${c.titre}) : ${c.resume}`).join('\n')}
+Fichiers produits : ${[...fichiers.keys()].join(', ') || 'aucun'}.
+
+Fais à l'utilisateur un bilan chaleureux en français, en 3 à 5 phrases courtes, sans Markdown : ce qui a été produit et quel fichier ouvrir en premier (dans l'onglet Fichiers, bouton « Voir »).`, { signal, modelTier: 'quick', cache: false });
+    emettre({ type: 'mission:fin', ok: true, texte: text.trim() });
+    if (fichiers.size) setTimeout(() => ouvrirOnglet('fichiers'), 2500);
+  } catch (e) {
+    for (const [id] of taches) if (['arrive', 'travaille'].includes(bureau.acteurs.get(id)?.etat)) emettre({ type: 'agent:part', id, ok: false });
+    emettre({ type: 'mission:fin', ok: false, texte: e?.code === 'cancelled' ? 'Mission arrêtée. Les fichiers déjà écrits restent dans l\'onglet Fichiers.' : messageErreur(e) });
+  } finally {
+    controleur = null;
+  }
+}
+
+// ---------- démo (sans Claude) ----------
+async function missionDemo(demande) {
+  controleur = new AbortController();
+  const signal = controleur.signal;
+  const m = (id) => equipe.specialistes.find((s) => s.id === id) || equipe.specialistes[0];
+  const pas = async (ms, ev) => { await attendre(ms, signal); if (!signal.aborted) emettre(ev); };
+  const f = (nom, contenu) => { fichiers.set(nom, contenu); afficherFichiers(); };
+  emettre({ type: 'mission:debut', demande });
+  emettre({ type: 'max:dit', texte: 'Je lis ta demande…' });
+  await pas(1800, { type: 'max:dit', texte: `Bonne idée ! ${m('chercheuse').nom} rassemble les infos, ${m('designer').nom} prépare le style et ${m('developpeur').nom} code la page. ${m('relecteur').nom} relira à la fin.` });
+  await pas(900, { type: 'agent:arrive', id: 'd1', membre: m('chercheuse'), tache: 'Rassembler les infos' });
+  await pas(400, { type: 'agent:arrive', id: 'd2', membre: m('designer'), tache: 'Palette et typographies' });
+  await pas(400, { type: 'agent:arrive', id: 'd3', membre: m('developpeur'), tache: 'Coder la page' });
+  await pas(3200, { type: 'agent:action', id: 'd1', icone: '💭', texte: 'Fait la liste des pains phares' });
+  await pas(700, { type: 'agent:action', id: 'd2', icone: '🎨', texte: 'Choisit une palette chaude' });
+  await pas(900, { type: 'agent:action', id: 'd3', icone: '🗂️', texte: 'Regarde les fichiers' });
+  await pas(1500, { type: 'agent:action', id: 'd2', icone: '✍️', texte: 'Écrit style.css' });
+  if (!signal.aborted) f('style.css', 'body{margin:0;font-family:Georgia,serif;background:#fbf3e4;color:#4a2c17}\nheader{padding:48px 24px;text-align:center;background:#e9b872}\nh1{margin:0;font-size:2.4rem}\nmain{max-width:640px;margin:0 auto;padding:24px}\nli{margin:8px 0}');
+  await pas(900, { type: 'agent:action', id: 'd3', icone: '✍️', texte: 'Écrit index.html' });
+  if (!signal.aborted) f('index.html', '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>La Mie Dorée</title><link rel="stylesheet" href="style.css"></head><body><header><h1>La Mie Dorée</h1><p>Boulangerie artisanale depuis 1987</p></header><main><h2>Nos pains</h2><ul><li>Pain au levain, 24 h de fermentation</li><li>Baguette tradition</li><li>Brioche au beurre</li></ul><p>Ouvert du mardi au dimanche, de 7 h à 19 h 30.</p></main></body></html>');
+  await pas(1600, { type: 'agent:action', id: 'd1', icone: '✍️', texte: 'Écrit notes.md' });
+  if (!signal.aborted) f('notes.md', '# Notes\n\n- Mettre en avant le levain naturel.\n- Afficher les horaires bien visibles.\n- À vérifier : année de création.');
+  await pas(1400, { type: 'agent:part', id: 'd2', resume: 'style.css livré : palette miel et crème, typo à empattements.' });
+  await pas(1000, { type: 'agent:part', id: 'd1', resume: 'Infos clés et idées de mise en avant dans notes.md.' });
+  await pas(1000, { type: 'agent:action', id: 'd3', icone: '✏️', texte: 'Retouche index.html' });
+  await pas(1400, { type: 'agent:part', id: 'd3', resume: 'index.html prêt, sans build.' });
+  await pas(600, { type: 'max:dit', texte: `Super travail. ${m('relecteur').nom}, tu peux relire ?` });
+  await pas(800, { type: 'agent:arrive', id: 'd4', membre: m('relecteur'), tache: 'Relecture finale' });
+  await pas(3000, { type: 'agent:action', id: 'd4', icone: '📖', texte: 'Lit index.html' });
+  await pas(1500, { type: 'agent:action', id: 'd4', icone: '✏️', texte: 'Retouche index.html' });
+  await pas(1600, { type: 'agent:part', id: 'd4', resume: 'Deux coquilles corrigées, horaires harmonisés.' });
+  await pas(1200, { type: 'mission:fin', ok: true, texte: "Mission terminée ! (démonstration)\n\nOuvre l'onglet Fichiers et clique sur « Voir » à côté d'index.html pour découvrir la page." });
+  if (signal.aborted) {
+    for (const id of ['d1', 'd2', 'd3', 'd4']) if (['arrive', 'travaille'].includes(bureau.acteurs.get(id)?.etat)) emettre({ type: 'agent:part', id, ok: false });
+    emettre({ type: 'mission:fin', ok: false, texte: 'Mission arrêtée.' });
+  } else setTimeout(() => ouvrirOnglet('fichiers'), 2500);
+  controleur = null;
+}
+
+// ---------- envoi ----------
+$('#form').onsubmit = async (e) => {
+  e.preventDefault();
+  if (enCours) return;
+  const demande = $('#demande').value.trim();
+  if (!demande) { maxDit('Dis-moi ce que tu veux 🙂'); $('#demande').focus(); return; }
+  $('#demande').value = '';
+  await pret;
+  if (!sample || $('#demo').checked) missionDemo(demande);
+  else missionReelle(demande);
+};
+$('#demande').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) $('#form').requestSubmit(); });
+$('#btn-stop').onclick = () => controleur?.abort();
+
+overlay('max', equipe.chef.nom, equipe.chef.couleur);
+portrait($('#portrait'), () => equipe.chef.couleur, true);
+afficherEquipe();
+afficherFichiers();
+})();
+
+</script>
